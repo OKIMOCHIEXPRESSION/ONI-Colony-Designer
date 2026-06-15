@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ONI Colony Designer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ── トップバー ── -->
+  <div id="topbar">
+    <h1><i class="ti ti-planet"></i> <span>ONI</span> Colony Designer</h1>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="btn-undo" disabled title="Undo (Ctrl+Z)"><i class="ti ti-arrow-back-up"></i><span class="tb-label">Undo</span></button>
+    <button class="tb-btn" id="btn-redo" disabled title="Redo (Ctrl+Y)"><i class="ti ti-arrow-forward-up"></i><span class="tb-label">Redo</span></button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="btn-save"><i class="ti ti-device-floppy"></i><span class="tb-label">保存</span></button>
+    <button class="tb-btn" id="btn-load"><i class="ti ti-folder-open"></i><span class="tb-label">読込</span></button>
+    <input type="file" id="load-input" accept=".json" style="display:none">
+    <div id="topbar-right">
+      <span id="zoom-label" style="font-size:11px;color:#505870;min-width:38px;text-align:right">100%</span>
+      <button class="zoom-btn" id="btn-zoom-in"   title="+"><i class="ti ti-plus"></i></button>
+      <button class="zoom-btn" id="btn-zoom-out"  title="-"><i class="ti ti-minus"></i></button>
+      <button class="zoom-btn" id="btn-zoom-reset" title="全体表示 (F)"><i class="ti ti-focus-centered"></i></button>
+    </div>
+  </div>
+
+  <!-- ── レイヤータブ ── -->
+  <div id="layer-tabs">
+    <div class="layer-tab active" data-layer="base"       style="--layer-color:#a0a8b8"><span class="tab-dot"></span>基本   <span class="tab-count" id="cnt-base">0</span></div>
+    <div class="layer-tab"        data-layer="plumbing"   style="--layer-color:#4a9adf"><span class="tab-dot"></span>配管   <span class="tab-count" id="cnt-plumbing">0</span></div>
+    <div class="layer-tab"        data-layer="gas"        style="--layer-color:#6ac87a"><span class="tab-dot"></span>ガス管 <span class="tab-count" id="cnt-gas">0</span></div>
+    <div class="layer-tab"        data-layer="electrical" style="--layer-color:#f0c040"><span class="tab-dot"></span>電気   <span class="tab-count" id="cnt-electrical">0</span></div>
+    <div class="layer-tab"        data-layer="automation" style="--layer-color:#c060e0"><span class="tab-dot"></span>自動化 <span class="tab-count" id="cnt-automation">0</span></div>
+    <div id="layer-tabs-right">
+      <span class="vis-label">表示:</span>
+      <button class="vis-btn on" id="vis-plumbing"   title="配管"   style="color:#4a9adf">━</button>
+      <button class="vis-btn on" id="vis-gas"        title="ガス"   style="color:#6ac87a">≡</button>
+      <button class="vis-btn on" id="vis-electrical" title="電気"   style="color:#f0c040">⚡</button>
+      <button class="vis-btn on" id="vis-automation" title="自動化" style="color:#c060e0">◈</button>
+    </div>
+  </div>
+
+  <!-- ── メインレイアウト ── -->
+  <div id="app">
+
+    <!-- 左サイドバー (デスクトップ/タブレット) -->
+    <div id="sidebar">
+      <div id="sidebar-header">
+        <h2>建物パレット</h2>
+        <input type="text" id="search-box" placeholder="検索...">
+      </div>
+      <div id="categories"></div>
+      <div id="tools">
+        <button class="tool-btn active" id="tool-place"><i class="ti ti-pencil"></i><span>配置</span></button>
+        <button class="tool-btn"        id="tool-erase"><i class="ti ti-eraser"></i><span>消去</span></button>
+        <button class="tool-btn"        id="btn-clear" ><i class="ti ti-trash"></i><span>全消去</span></button>
+      </div>
+      <div id="sidebar-hint">
+        <span><kbd>Space</kbd>+ドラッグ: パン</span>
+        <span><kbd>F</kbd>: 全体表示</span>
+        <span><kbd>WASD</kbd>/矢印: 移動</span>
+      </div>
+    </div>
+
+    <!-- キャンバスエリア -->
+    <div id="canvas-area">
+      <div id="grid-canvas">
+        <canvas id="main-canvas"></canvas>
+
+        <!-- ミニマップ (右下) -->
+        <div id="minimap-wrap">
+          <canvas id="minimap-canvas"></canvas>
+        </div>
+
+        <!-- コンテキストメニュー -->
+        <div id="context-menu">
+          <div class="ctx-item" id="ctx-delete"><i class="ti ti-trash"></i>削除</div>
+          <div class="ctx-item" id="ctx-copy"  ><i class="ti ti-copy"></i>コピー</div>
+        </div>
+      </div>
+
+      <!-- ステータスバー -->
+      <div id="info-bar">
+        <span class="info-item"><i class="ti ti-cursor-text"></i><span id="pos-label">--</span></span>
+        <span class="info-item"><i class="ti ti-building"></i><span id="count-label">0棟</span></span>
+        <span id="active-layer-label" class="info-layer">編集中: 基本</span>
+        <span id="selected-label" class="info-selected">建物を選択してください</span>
+        <span class="info-hint">長押し/右クリック: メニュー</span>
+      </div>
+    </div>
+
+    <!-- 右パネル -->
+    <div id="right-panel">
+      <div id="right-tabs">
+        <div class="right-tab active" id="tab-stats" data-panel="stats"><i class="ti ti-chart-bar"></i> 統計</div>
+        <div class="right-tab"        id="tab-rooms" data-panel="rooms"><i class="ti ti-home"></i> 部屋</div>
+      </div>
+      <div id="right-content">
+        <div id="panel-stats">
+          <div class="stat-card"><div class="stat-name">電力消費</div><div class="stat-val" id="stat-power">0 W</div><div class="stat-sub">発電: <span id="stat-gen" class="stat-ok">0 W</span></div></div>
+          <div class="stat-card"><div class="stat-name">電力収支</div><div class="stat-val" id="stat-balance">0 W</div></div>
+          <div class="stat-card"><div class="stat-name">酸素生産</div><div class="stat-val" id="stat-oxygen">0 g/s</div></div>
+          <div class="stat-card"><div class="stat-name">食料生産</div><div class="stat-val" id="stat-food">0 kcal</div></div>
+          <div class="stat-card"><div class="stat-name">水消費</div><div class="stat-val" id="stat-water">0 kg/s</div></div>
+        </div>
+        <div id="panel-rooms" style="display:none">
+          <div id="room-list"><div id="no-rooms">タイルで囲まれた<br>エリアを作ると<br>部屋を検出します</div></div>
+        </div>
+      </div>
+      <div id="legend">
+        <div class="legend-title">カテゴリ</div>
+        <div id="legend-items"></div>
+      </div>
+    </div>
+
+  </div><!-- /#app -->
+
+  <!-- スマホ: ボトムバー -->
+  <div id="bottom-bar">
+    <button class="tool-btn active" id="tool-place-m"><i class="ti ti-pencil"></i><span>配置</span></button>
+    <button class="tool-btn"        id="tool-erase-m"><i class="ti ti-eraser"></i><span>消去</span></button>
+    <button class="tb-btn" id="btn-undo-m" disabled><i class="ti ti-arrow-back-up"></i></button>
+    <button class="tb-btn" id="btn-redo-m" disabled><i class="ti ti-arrow-forward-up"></i></button>
+    <button class="tb-btn" id="btn-zoom-reset-m"><i class="ti ti-focus-centered"></i></button>
+    <button class="tb-btn" id="palette-toggle"><i class="ti ti-grid-dots"></i><span>建物</span></button>
+  </div>
+
+  <!-- スマホ: 建物パレットドロワー -->
+  <div id="palette-drawer">
+    <div id="palette-drawer-header">
+      <input type="text" id="search-box-m" placeholder="建物を検索...">
+      <button id="palette-close"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="categories-m"></div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="data.js"></script>
+  <script src="store.js"></script>
+  <script src="rooms.js"></script>
+  <script src="renderer.js"></script>
+  <script src="ui.js"></script>
+  <script src="input.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
