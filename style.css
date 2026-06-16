@@ -475,6 +475,9 @@ canvas#main-canvas { display: block; touch-action: none; }
   /* サイドバー・右パネルを非表示 */
   #sidebar      { display: none; }
   #right-panel  { display: none; }
+  #right-panel.mobile-open {
+    display: flex;
+  }
   #layer-tabs   { font-size: 10px; }
   .layer-tab    { padding: 5px 8px; font-size: 10px; }
   .tab-count    { display: none; }
@@ -502,6 +505,7 @@ canvas#main-canvas { display: block; touch-action: none; }
 @media (max-width: 767px) and (orientation: landscape) {
   #bottom-bar { display: none; }
   #sidebar { display: flex; width: 160px; min-width: 160px; }
+  #right-panel { display: flex; }
   #sidebar-hint { display: none; }
   #palette-drawer { display: none; }
 }

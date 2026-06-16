@@ -298,15 +298,29 @@ const App = (() => {
     // スマホ: ボトムバーの建物パレット開閉
     const paletteToggle = document.getElementById("palette-toggle");
     const paletteDrawer = document.getElementById("palette-drawer");
+    const roomsToggle   = document.getElementById("rooms-toggle");
+    const rightPanel    = document.getElementById("right-panel");
     if (paletteToggle && paletteDrawer) {
       paletteToggle.addEventListener("click", () => {
         paletteDrawer.classList.toggle("open");
         paletteToggle.classList.toggle("active");
+        rightPanel?.classList.remove("mobile-open");
+        roomsToggle?.classList.remove("active");
       });
       // パレット外タップで閉じる
       document.getElementById("main-canvas")?.addEventListener("pointerdown", () => {
         paletteDrawer.classList.remove("open");
         paletteToggle.classList.remove("active");
+        rightPanel?.classList.remove("mobile-open");
+        roomsToggle?.classList.remove("active");
+      });
+    }
+    if (roomsToggle && rightPanel) {
+      roomsToggle.addEventListener("click", () => {
+        rightPanel.classList.toggle("mobile-open");
+        roomsToggle.classList.toggle("active");
+        paletteDrawer?.classList.remove("open");
+        paletteToggle?.classList.remove("active");
       });
     }
   }
