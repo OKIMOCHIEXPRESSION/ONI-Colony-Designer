@@ -1,225 +1,275 @@
 // ============================================================
-// data.js — 静的データ定義（ゲーム内データ・定数）
-// 追加・変更はこのファイルだけで完結する
+// data.js - game constants and building master data
+// Generated from building_master.xlsx. Do not edit building rows by hand.
 // ============================================================
 
-// ── グリッド定数 ─────────────────────────────────────────────
 const GRID_COLS = 40;
 const GRID_ROWS = 30;
-const CELL_SIZE = 18; // px（zoom=1 のときの1マスサイズ）
+const CELL_SIZE = 18;
 
-// 製造ポッドの固定配置位置（グリッド中央寄り）
+// Printing Pod storage cell. Placed buildings keep the existing top-left storage format.
 const POD_COL = 18;
 const POD_ROW = 13;
 
-// ── レイヤー定義 ─────────────────────────────────────────────
-// alpha      : アクティブ時の描画不透明度
-// dimAlpha   : 非アクティブ時の重ね表示不透明度
 const LAYERS = {
   base:       { name: "基本",   color: "#a0a8b8", alpha: 1.0,  dimAlpha: 0.18 },
   plumbing:   { name: "配管",   color: "#4a9adf", alpha: 0.92, dimAlpha: 0.15 },
-  gas:        { name: "ガス管", color: "#6ac87a", alpha: 0.92, dimAlpha: 0.15 },
-  electrical: { name: "電気",   color: "#f0c040", alpha: 0.92, dimAlpha: 0.15 },
+  gas:        { name: "換気",   color: "#6ac87a", alpha: 0.92, dimAlpha: 0.15 },
+  electrical: { name: "電力",   color: "#f0c040", alpha: 0.92, dimAlpha: 0.15 },
   automation: { name: "自動化", color: "#c060e0", alpha: 0.92, dimAlpha: 0.15 },
 };
 
-// レイヤーの描画順（bottom → top）
 const LAYER_ORDER = ["base", "plumbing", "gas", "electrical", "automation"];
 
-// ── 製造ポッド（固定・削除不可） ─────────────────────────────
-const PRINTING_POD = {
-  id: "printing_pod",
-  name: "製造ポッド",
-  color: "#ff6a00",
-  icon: "🔴",
-  w: 4, h: 4,
-  power: 0, oxygen: 0, food: 0, water: 0,
-  fixed: true,
-  layer: "base",
-  solid: false,
-};
-
-// ── 建物データ ───────────────────────────────────────────────
-// 各カテゴリ: { layer: レイヤーキー, items: [建物, ...] }
-//
-// 建物プロパティ:
-//   id, name, color, icon  : 表示用
-//   w, h                   : ゲーム内セルサイズ
-//   power                  : 正=発電量W / 負=消費量W
-//   oxygen                 : 酸素生産 g/s
-//   food                   : 食料生産 kcal/cycle
-//   water                  : 正=水生産 / 負=水消費 kg/s
-//   solid   (bool)         : 壁・タイル扱い（部屋判定に使用）
-//   isDoor  (bool)         : ドア扱い（境界として壁判定するが通路）
-//   isGeyser(bool)         : 間欠泉・火山フラグ
-//   fixed   (bool)         : 削除不可（製造ポッドのみ）
-//
 const BUILDINGS = {
-
-  // ────────── baseレイヤー ──────────
-
-  "基本": { layer: "base", items: [
-    { id: "ladder",       name: "梯子",             color: "#7c7c7c", icon: "↕",  w: 1, h: 1, power:    0, oxygen:   0, food:    0, water:    0, solid: false },
-    { id: "tile",         name: "タイル",           color: "#5a6475", icon: "▪",  w: 1, h: 1, power:    0, oxygen:   0, food:    0, water:    0, solid: true  },
-    { id: "mesh_tile",    name: "メッシュタイル",   color: "#8a9475", icon: "▫",  w: 1, h: 1, power:    0, oxygen:   0, food:    0, water:    0, solid: true  },
-    { id: "tile_bunker",  name: "バンカータイル",   color: "#4a5060", icon: "█",  w: 1, h: 1, power:    0, oxygen:   0, food:    0, water:    0, solid: true  },
-    { id: "tile_glass",   name: "ガラスタイル",     color: "#a0c8e0", icon: "▪",  w: 1, h: 1, power:    0, oxygen:   0, food:    0, water:    0, solid: true  },
-    { id: "door",         name: "ドア",             color: "#8b6914", icon: "🚪", w: 1, h: 2, power:    0, oxygen:   0, food:    0, water:    0, solid: true,  isDoor: true },
-    { id: "airlock",      name: "エアロック",       color: "#6a5acd", icon: "⊞",  w: 2, h: 3, power:    0, oxygen:   0, food:    0, water:    0, solid: true,  isDoor: true },
-    { id: "travel_tube",  name: "トラベルチューブ", color: "#4a9acd", icon: "⟶",  w: 1, h: 1, power:  -10, oxygen:   0, food:    0, water:    0, solid: false },
+  "Base": { layer: "base", items: [
+    { id: "tile", category: "Base", name_en: "Tile", name_ja: "タイル", name: "タイル", color: "#8FA3B8", icon: "tile", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "airflow_tile", category: "Base", name_en: "Airflow Tile", name_ja: "ガス透過タイル", name: "ガス透過タイル", color: "#8FA3B8", icon: "airflow_tile", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "mesh_tile", category: "Base", name_en: "Mesh Tile", name_ja: "網目タイル", name: "網目タイル", color: "#8FA3B8", icon: "mesh_tile", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "insulated_tile", category: "Base", name_en: "Insulated Tile", name_ja: "断熱タイル", name: "断熱タイル", color: "#8FA3B8", icon: "insulated_tile", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "metal_tile", category: "Base", name_en: "Metal Tile", name_ja: "金属タイル", name: "金属タイル", color: "#8FA3B8", icon: "metal_tile", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "plastic_tile", category: "Base", name_en: "Plastic Tile", name_ja: "プラスチックタイル", name: "プラスチックタイル", color: "#8FA3B8", icon: "plastic_tile", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "window_tile", category: "Base", name_en: "Window Tile", name_ja: "ガラスタイル", name: "ガラスタイル", color: "#8FA3B8", icon: "window_tile", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "bunker_tile", category: "Base", name_en: "Bunker Tile", name_ja: "バンカータイル", name: "バンカータイル", color: "#8FA3B8", icon: "bunker_tile", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "carpet_tile", category: "Base", name_en: "Carpet Tile", name_ja: "絨毯タイル", name: "絨毯タイル", color: "#8FA3B8", icon: "carpet_tile", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "ladder", category: "Base", name_en: "Ladder", name_ja: "はしご", name: "はしご", color: "#8FA3B8", icon: "ladder", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "plastic_ladder", category: "Base", name_en: "Plastic Ladder", name_ja: "プラスチックのはしご", name: "プラスチックのはしご", color: "#8FA3B8", icon: "plastic_ladder", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "fire_pole", category: "Base", name_en: "Fire Pole", name_ja: "消防の棒", name: "消防の棒", color: "#8FA3B8", icon: "fire_pole", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "manual_airlock", category: "Base", name_en: "Manual Airlock", name_ja: "手動エアロック", name: "手動エアロック", color: "#8FA3B8", icon: "manual_airlock", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "mechanized_airlock", category: "Base", name_en: "Mechanized Airlock", name_ja: "機械式エアロック", name: "機械式エアロック", color: "#8FA3B8", icon: "mechanized_airlock", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "pneumatic_door", category: "Base", name_en: "Pneumatic Door", name_ja: "格子戸", name: "格子戸", color: "#8FA3B8", icon: "pneumatic_door", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "bunker_door", category: "Base", name_en: "Bunker Door", name_ja: "バンカードア", name: "バンカードア", color: "#8FA3B8", icon: "bunker_door", w: 4, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "storage_locker", category: "Base", name_en: "Storage Locker", name_ja: "収納庫", name: "収納庫", color: "#8FA3B8", icon: "storage_locker", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "storage_locker_smart", category: "Base", name_en: "Storage Locker Smart", name_ja: "スマート収納庫", name: "スマート収納庫", color: "#8FA3B8", icon: "storage_locker_smart", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "object_dispenser", category: "Base", name_en: "Object Dispenser", name_ja: "自動払い出し器", name: "自動払い出し器", color: "#8FA3B8", icon: "object_dispenser", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "drywall", category: "Base", name_en: "Drywall", name_ja: "壁紙", name: "壁紙", color: "#8FA3B8", icon: "drywall", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "liquid_reservoir", category: "Base", name_en: "Liquid Reservoir", name_ja: "液体貯蔵タンク", name: "液体貯蔵タンク", color: "#8FA3B8", icon: "liquid_reservoir", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "gas_reservoir", category: "Base", name_en: "Gas Reservoir", name_ja: "気体貯蔵タンク", name: "気体貯蔵タンク", color: "#8FA3B8", icon: "gas_reservoir", w: 5, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "travel_tube", category: "Base", name_en: "Travel Tube", name_ja: "輸送チューブ", name: "輸送チューブ", color: "#8FA3B8", icon: "travel_tube", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "travel_tube_entrance", category: "Base", name_en: "Travel Tube Entrance", name_ja: "輸送チューブ入口", name: "輸送チューブ入口", color: "#8FA3B8", icon: "travel_tube_entrance", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "travel_tube_wall_bridge", category: "Base", name_en: "Travel Tube Wall Bridge", name_ja: "輸送チューブ交差点", name: "輸送チューブ交差点", color: "#8FA3B8", icon: "travel_tube_wall_bridge", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
   ]},
-
-  "酸素": { layer: "base", items: [
-    { id: "electrolyzer", name: "電解装置",       color: "#4a90d9", icon: "O₂", w: 2, h: 2, power: -120, oxygen: 888, food:  0, water:  -1, solid: false },
-    { id: "algae_deox",   name: "藻類脱酸素機",   color: "#5aad5a", icon: "🌿", w: 1, h: 2, power:  -60, oxygen:  40, food:  0, water:   0, solid: false },
-    { id: "rust_deox",    name: "錆脱酸素機",     color: "#c87941", icon: "⚗",  w: 2, h: 2, power:    0, oxygen:  90, food:  0, water:   0, solid: false },
-    { id: "deodorizer",   name: "脱臭機",         color: "#d4a017", icon: "💨", w: 1, h: 2, power:    0, oxygen:   0, food:  0, water:   0, solid: false },
-    { id: "air_filter",   name: "エアフィルター", color: "#709090", icon: "⊛",  w: 2, h: 2, power: -120, oxygen:   0, food:  0, water:   0, solid: false },
+  "Oxygen": { layer: "base", items: [
+    { id: "mineral_deoxidizer", category: "Oxygen", name_en: "Mineral Deoxidizer", name_ja: "酸素散布器", name: "酸素散布器", color: "#4A90D9", icon: "mineral_deoxidizer", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "algae_habitat", category: "Oxygen", name_en: "Algae Habitat", name_ja: "藻類テラリウム", name: "藻類テラリウム", color: "#4A90D9", icon: "algae_habitat", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "electrolyzer", category: "Oxygen", name_en: "Electrolyzer", name_ja: "電解装置", name: "電解装置", color: "#4A90D9", icon: "electrolyzer", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "air_filter", category: "Oxygen", name_en: "Air Filter", name_ja: "脱臭器", name: "脱臭器", color: "#4A90D9", icon: "air_filter", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "co2_scrubber", category: "Oxygen", name_en: "CO2 Scrubber", name_ja: "二酸化炭素スクラバー", name: "二酸化炭素スクラバー", color: "#4A90D9", icon: "co2_scrubber", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "rust_deoxidizer", category: "Oxygen", name_en: "Rust Deoxidizer", name_ja: "サビ酸化器", name: "サビ酸化器", color: "#4A90D9", icon: "rust_deoxidizer", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
   ]},
-
-  "電力": { layer: "base", items: [
-    { id: "manual_gen",    name: "手動発電機",           color: "#e08c2b", icon: "⚡", w: 2, h: 2, power:  400, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "coal_gen",      name: "石炭発電機",           color: "#666666", icon: "🔥", w: 4, h: 3, power:  600, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "hamster_wheel", name: "ハムスターホイール",   color: "#c8b400", icon: "🐹", w: 2, h: 2, power:  400, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "nat_gas_gen",   name: "天然ガス発電機",       color: "#4db8d0", icon: "♨",  w: 4, h: 3, power:  800, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "petroleum_gen", name: "石油発電機",           color: "#303030", icon: "⛽", w: 4, h: 3, power: 2000, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "wood_gen",      name: "木材発電機",           color: "#805030", icon: "🌲", w: 4, h: 3, power:  300, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "hydrogen_gen",  name: "水素発電機",           color: "#80a0f0", icon: "H₂", w: 4, h: 3, power:  800, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "solar_panel",   name: "ソーラーパネル",       color: "#f0d040", icon: "☀",  w: 8, h: 2, power:  380, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "steam_turbine", name: "蒸気タービン",         color: "#c0a050", icon: "⚙",  w: 5, h: 4, power:  850, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "battery",       name: "バッテリー",           color: "#9b8dc0", icon: "🔋", w: 1, h: 2, power:    0, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "smart_battery", name: "スマートバッテリー",   color: "#7070c8", icon: "⊕",  w: 1, h: 2, power:    0, oxygen: 0, food: 0, water: 0, solid: false },
+  "Power": { layer: "electrical", items: [
+    { id: "manual_generator", category: "Power", name_en: "Manual Generator", name_ja: "手動発電機", name: "手動発電機", color: "#E0A22B", icon: "manual_generator", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "coal_generator", category: "Power", name_en: "Coal Generator", name_ja: "石炭発電機", name: "石炭発電機", color: "#E0A22B", icon: "coal_generator", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "hydrogen_generator", category: "Power", name_en: "Hydrogen Generator", name_ja: "水素発電機", name: "水素発電機", color: "#E0A22B", icon: "hydrogen_generator", w: 4, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "methane_generator", category: "Power", name_en: "Methane Generator", name_ja: "天然ガス発電機", name: "天然ガス発電機", color: "#E0A22B", icon: "methane_generator", w: 4, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "petroleum_generator", category: "Power", name_en: "Petroleum Generator", name_ja: "石油発電機", name: "石油発電機", color: "#E0A22B", icon: "petroleum_generator", w: 3, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "wood_gas_generator", category: "Power", name_en: "Wood Gas Generator", name_ja: "木材バーナー", name: "木材バーナー", color: "#E0A22B", icon: "wood_gas_generator", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "steam_turbine2", category: "Power", name_en: "Steam Turbine2", name_ja: "蒸気タービン", name: "蒸気タービン", color: "#E0A22B", icon: "steam_turbine2", w: 5, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "solar_panel", category: "Power", name_en: "Solar Panel", name_ja: "ソーラーパネル", name: "ソーラーパネル", color: "#E0A22B", icon: "solar_panel", w: 7, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "battery", category: "Power", name_en: "Battery", name_ja: "バッテリー", name: "バッテリー", color: "#E0A22B", icon: "battery", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "battery_medium", category: "Power", name_en: "Battery Medium", name_ja: "大容量バッテリー", name: "大容量バッテリー", color: "#E0A22B", icon: "battery_medium", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "battery_smart", category: "Power", name_en: "Battery Smart", name_ja: "スマートバッテリー", name: "スマートバッテリー", color: "#E0A22B", icon: "battery_smart", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "power_transformer_small", category: "Power", name_en: "Power Transformer Small", name_ja: "変圧器", name: "変圧器", color: "#E0A22B", icon: "power_transformer_small", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "power_transformer", category: "Power", name_en: "Power Transformer", name_ja: "大型変圧器", name: "大型変圧器", color: "#E0A22B", icon: "power_transformer", w: 3, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "wire", category: "Power", name_en: "Wire", name_ja: "電線", name: "電線", color: "#E0A22B", icon: "wire", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "wire_high_wattage", category: "Power", name_en: "Wire High Wattage", name_ja: "高負荷電線", name: "高負荷電線", color: "#E0A22B", icon: "wire_high_wattage", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "wire_barrier_high_wattage", category: "Power", name_en: "Wire Barrier High Wattage", name_ja: "高負荷導電板", name: "高負荷導電板", color: "#E0A22B", icon: "wire_barrier_high_wattage", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "power_shutoff", category: "Power", name_en: "Power Shutoff", name_ja: "電力遮断器", name: "電力遮断器", color: "#E0A22B", icon: "power_shutoff", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "switch", category: "Power", name_en: "Switch", name_ja: "スイッチ", name: "スイッチ", color: "#E0A22B", icon: "switch", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
   ]},
-
-  "食料": { layer: "base", items: [
-    { id: "farm_tile",      name: "農場タイル",         color: "#6aad3a", icon: "🌱", w: 2, h: 1, power:  -20, oxygen: 0, food: 1600, water: -0.22, solid: false },
-    { id: "hydroponic",     name: "水耕栽培タイル",     color: "#3aad8a", icon: "💧", w: 2, h: 2, power: -120, oxygen: 0, food: 2000, water:  -0.5, solid: false },
-    { id: "grill",          name: "電気グリル",         color: "#d47a2a", icon: "🍳", w: 2, h: 2, power:  -60, oxygen: 0, food: 4000, water:     0, solid: false },
-    { id: "microbe_musher", name: "微生物餌製造機",     color: "#8a5a9a", icon: "🧫", w: 2, h: 2, power: -120, oxygen: 0, food: 2400, water:    -1, solid: false },
-    { id: "bbq",            name: "バーベキューグリル", color: "#b05020", icon: "🥩", w: 2, h: 2, power:    0, oxygen: 0, food: 3200, water:     0, solid: false },
-    { id: "egg_cracker",    name: "エッグクラッカー",   color: "#e8d880", icon: "🥚", w: 3, h: 3, power: -120, oxygen: 0, food:    0, water:     0, solid: false },
-    { id: "refrigerator",   name: "冷蔵庫",             color: "#5080c0", icon: "❄",  w: 1, h: 3, power: -120, oxygen: 0, food:    0, water:     0, solid: false },
-    { id: "dining_table",   name: "食卓",               color: "#c09050", icon: "🍽", w: 4, h: 2, power:    0, oxygen: 0, food:    0, water:     0, solid: false },
+  "Food": { layer: "base", items: [
+    { id: "planter_box", category: "Food", name_en: "Planter Box", name_ja: "プランターボックス", name: "プランターボックス", color: "#74A843", icon: "planter_box", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "farm_tile", category: "Food", name_en: "Farm Tile", name_ja: "農業タイル", name: "農業タイル", color: "#74A843", icon: "farm_tile", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "hydroponic_farm", category: "Food", name_en: "Hydroponic Farm", name_ja: "水耕栽培タイル", name: "水耕栽培タイル", color: "#74A843", icon: "hydroponic_farm", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "microbe_musher", category: "Food", name_en: "Microbe Musher", name_ja: "微生物粉砕機", name: "微生物粉砕機", color: "#74A843", icon: "microbe_musher", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "electric_grill", category: "Food", name_en: "Electric Grill", name_ja: "電気グリル", name: "電気グリル", color: "#74A843", icon: "electric_grill", w: 3, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "gas_range", category: "Food", name_en: "Gas Range", name_ja: "ガスレンジ", name: "ガスレンジ", color: "#74A843", icon: "gas_range", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "ration_box", category: "Food", name_en: "Ration Box", name_ja: "食料保存庫", name: "食料保存庫", color: "#74A843", icon: "ration_box", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "refrigerator", category: "Food", name_en: "Refrigerator", name_ja: "冷蔵庫", name: "冷蔵庫", color: "#74A843", icon: "refrigerator", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "egg_cracker", category: "Food", name_en: "Egg Cracker", name_ja: "卵割り器", name: "卵割り器", color: "#74A843", icon: "egg_cracker", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "egg_incubator", category: "Food", name_en: "Egg Incubator", name_ja: "孵卵器", name: "孵卵器", color: "#74A843", icon: "egg_incubator", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "creature_feeder", category: "Food", name_en: "Creature Feeder", name_ja: "給餌器", name: "給餌器", color: "#74A843", icon: "creature_feeder", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "fish_feeder", category: "Food", name_en: "Fish Feeder", name_ja: "給魚器", name: "給魚器", color: "#74A843", icon: "fish_feeder", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "creature_trap", category: "Food", name_en: "Creature Trap", name_ja: "補獲トラップ", name: "補獲トラップ", color: "#74A843", icon: "creature_trap", w: 2, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "fish_trap", category: "Food", name_en: "Fish Trap", name_ja: "補魚トラップ", name: "補魚トラップ", color: "#74A843", icon: "fish_trap", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "flying_creature_trap", category: "Food", name_en: "Flying Creature Trap", name_ja: "飛行生物トラップ", name: "飛行生物トラップ", color: "#74A843", icon: "flying_creature_trap", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "creature_delivery_point", category: "Food", name_en: "Creature Delivery Point", name_ja: "生き物解放置場", name: "生き物解放置場", color: "#74A843", icon: "creature_delivery_point", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "fish_delivery_point", category: "Food", name_en: "Fish Delivery Point", name_ja: "魚解放置場", name: "魚解放置場", color: "#74A843", icon: "fish_delivery_point", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "belly_fish_delivery_point", category: "Food", name_en: "Belly Fish Delivery Point", name_ja: "魚移動器", name: "魚移動器", color: "#74A843", icon: "belly_fish_delivery_point", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "critter_condo", category: "Food", name_en: "Critter Condo", name_ja: "生き物マンション", name: "生き物マンション", color: "#74A843", icon: "critter_condo", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "airborne_critter_condo", category: "Food", name_en: "Airborne Critter Condo", name_ja: "飛行生物マンション", name: "飛行生物マンション", color: "#74A843", icon: "airborne_critter_condo", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "spice_grinder", category: "Food", name_en: "Spice Grinder", name_ja: "スパイス研磨機", name: "スパイス研磨機", color: "#74A843", icon: "spice_grinder", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "dehydrator", category: "Food", name_en: "Dehydrator", name_ja: "脱水機", name: "脱水機", color: "#74A843", icon: "dehydrator", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "rehydrator", category: "Food", name_en: "Rehydrator", name_ja: "復水機", name: "復水機", color: "#74A843", icon: "rehydrator", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
   ]},
-
-  "デュプ設備": { layer: "base", items: [
-    { id: "cot",              name: "コット",             color: "#b09070", icon: "🛏", w: 4, h: 2, power:    0, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "bed_luxury",       name: "高級ベッド",         color: "#7060d0", icon: "🛏", w: 4, h: 2, power:  -60, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "recreation",       name: "娯楽設備",           color: "#d070a0", icon: "🎮", w: 3, h: 3, power:  -60, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "massage_table",    name: "マッサージ台",       color: "#c060b0", icon: "💆", w: 4, h: 2, power:  -60, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "espresso_machine", name: "エスプレッソマシン", color: "#805040", icon: "☕", w: 2, h: 2, power: -120, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "research",         name: "研究台",             color: "#7090d0", icon: "🔬", w: 4, h: 3, power: -120, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "research_advanced",name: "超高等研究台",       color: "#5070f0", icon: "🧪", w: 4, h: 3, power: -240, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "telescope",        name: "天体望遠鏡",         color: "#6080c0", icon: "🔭", w: 4, h: 4, power: -120, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "storage",          name: "収納コンテナ",       color: "#a08060", icon: "📦", w: 2, h: 2, power:    0, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "med_bay",          name: "医療ベッド",         color: "#d04060", icon: "⛑",  w: 3, h: 3, power: -120, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "triage",           name: "トリアージ台",       color: "#c06080", icon: "💊", w: 2, h: 2, power:    0, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "sick_bay",         name: "診療台",             color: "#e04070", icon: "🏥", w: 4, h: 3, power: -120, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "grooming_station", name: "お手入れ台",         color: "#a07040", icon: "✂",  w: 3, h: 3, power: -120, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "shearing_machine", name: "毛刈り機",           color: "#906030", icon: "✄",  w: 4, h: 3, power: -120, oxygen: 0, food: 0, water: 0, solid: false },
+  "Plumbing": { layer: "plumbing", items: [
+    { id: "liquid_pump", category: "Plumbing", name_en: "Liquid Pump", name_ja: "汲み上げポンプ", name: "汲み上げポンプ", color: "#3B82C4", icon: "liquid_pump", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "mini_liquid_pump", category: "Plumbing", name_en: "Mini Liquid Pump", name_ja: "ミニ汲み上げポンプ", name: "ミニ汲み上げポンプ", color: "#3B82C4", icon: "mini_liquid_pump", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "pitcher_pump", category: "Plumbing", name_en: "Pitcher Pump", name_ja: "手押しポンプ", name: "手押しポンプ", color: "#3B82C4", icon: "pitcher_pump", w: 4, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "liquid_vent", category: "Plumbing", name_en: "Liquid Vent", name_ja: "排水口", name: "排水口", color: "#3B82C4", icon: "liquid_vent", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "bottle_emptier", category: "Plumbing", name_en: "Bottle Emptier", name_ja: "手動排水口", name: "手動排水口", color: "#3B82C4", icon: "bottle_emptier", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "liquid_valve", category: "Plumbing", name_en: "Liquid Valve", name_ja: "液体バルブ", name: "液体バルブ", color: "#3B82C4", icon: "liquid_valve", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "liquid_shutoff", category: "Plumbing", name_en: "Liquid Shutoff", name_ja: "液体遮断器", name: "液体遮断器", color: "#3B82C4", icon: "liquid_shutoff", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "liquid_filter", category: "Plumbing", name_en: "Liquid Filter", name_ja: "液体フィルター", name: "液体フィルター", color: "#3B82C4", icon: "liquid_filter", w: 3, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "liquid_meter", category: "Plumbing", name_en: "Liquid Meter", name_ja: "液体流量計バルブ", name: "液体流量計バルブ", color: "#3B82C4", icon: "liquid_meter", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "outhouse", category: "Plumbing", name_en: "Outhouse", name_ja: "常設トイレ", name: "常設トイレ", color: "#3B82C4", icon: "outhouse", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "lavatory", category: "Plumbing", name_en: "Lavatory", name_ja: "水洗トイレ", name: "水洗トイレ", color: "#3B82C4", icon: "lavatory", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "shower", category: "Plumbing", name_en: "Shower", name_ja: "シャワー", name: "シャワー", color: "#3B82C4", icon: "shower", w: 2, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "liquid_pipe", category: "Plumbing", name_en: "Liquid Pipe", name_ja: "液体パイプ", name: "液体パイプ", color: "#3B82C4", icon: "liquid_pipe", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "contact_conductive_pipe_bridge", category: "Plumbing", name_en: "Contact Conductive Pipe Bridge", name_ja: "伝導パネル", name: "伝導パネル", color: "#3B82C4", icon: "contact_conductive_pipe_bridge", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
   ]},
-
-  "水・液体": { layer: "base", items: [
-    { id: "sink",         name: "洗い場",           color: "#5090c8", icon: "🚿", w: 2, h: 2, power: -120, oxygen: 0, food: 0, water: -0.2, solid: false },
-    { id: "toilet",       name: "トイレ",           color: "#8080c0", icon: "🚽", w: 1, h: 3, power:    0, oxygen: 0, food: 0, water:    0, solid: false },
-    { id: "outhouse",     name: "簡易トイレ",       color: "#907060", icon: "🚽", w: 2, h: 3, power:    0, oxygen: 0, food: 0, water:    0, solid: false },
-    { id: "lavatory",     name: "洗面台",           color: "#60a0c0", icon: "🪥", w: 2, h: 3, power: -120, oxygen: 0, food: 0, water: -0.5, solid: false },
-    { id: "liquid_pump",  name: "液体ポンプ",       color: "#3070a8", icon: "⊕",  w: 2, h: 2, power: -240, oxygen: 0, food: 0, water:    0, solid: false },
-    { id: "liquid_pipe",  name: "液体パイプ",       color: "#4080b8", icon: "─",  w: 1, h: 1, power:    0, oxygen: 0, food: 0, water:    0, solid: false },
-    { id: "water_sieve",  name: "汚染水フィルター", color: "#4480a8", icon: "⋒",  w: 2, h: 2, power: -120, oxygen: 0, food: 0, water:    1, solid: false },
-    { id: "desalinator",  name: "脱塩装置",         color: "#3060d8", icon: "🌊", w: 4, h: 3, power: -480, oxygen: 0, food: 0, water:    1, solid: false },
+  "Ventilation": { layer: "gas", items: [
+    { id: "gas_pump", category: "Ventilation", name_en: "Gas Pump", name_ja: "気体ポンプ", name: "気体ポンプ", color: "#54A86A", icon: "gas_pump", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "mini_gas_pump", category: "Ventilation", name_en: "Mini Gas Pump", name_ja: "ミニ気体ポンプ", name: "ミニ気体ポンプ", color: "#54A86A", icon: "mini_gas_pump", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "gas_vent", category: "Ventilation", name_en: "Gas Vent", name_ja: "排気口", name: "排気口", color: "#54A86A", icon: "gas_vent", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "gas_vent_high_pressure", category: "Ventilation", name_en: "Gas Vent High Pressure", name_ja: "高圧排気口", name: "高圧排気口", color: "#54A86A", icon: "gas_vent_high_pressure", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "gas_bottle_filler", category: "Ventilation", name_en: "Gas Bottle Filler", name_ja: "キャニスター充填機", name: "キャニスター充填機", color: "#54A86A", icon: "gas_bottle_filler", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "gas_bottle_empty", category: "Ventilation", name_en: "Gas Bottle Empty", name_ja: "キャニスター払い出し機", name: "キャニスター払い出し機", color: "#54A86A", icon: "gas_bottle_empty", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "gas_valve", category: "Ventilation", name_en: "Gas Valve", name_ja: "気体バルブ", name: "気体バルブ", color: "#54A86A", icon: "gas_valve", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "gas_shutoff", category: "Ventilation", name_en: "Gas Shutoff", name_ja: "気体遮断器", name: "気体遮断器", color: "#54A86A", icon: "gas_shutoff", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "gas_filter", category: "Ventilation", name_en: "Gas Filter", name_ja: "気体フィルター", name: "気体フィルター", color: "#54A86A", icon: "gas_filter", w: 3, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "gas_meter", category: "Ventilation", name_en: "Gas Meter", name_ja: "気体流量計バルブ", name: "気体流量計バルブ", color: "#54A86A", icon: "gas_meter", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "gas_pipe", category: "Ventilation", name_en: "Gas Pipe", name_ja: "気体パイプ", name: "気体パイプ", color: "#54A86A", icon: "gas_pipe", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
   ]},
-
-  "温度・ガス": { layer: "base", items: [
-    { id: "thermo_reg",   name: "温調装置",         color: "#a04030", icon: "🌡", w: 2, h: 2, power:  -120, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "space_heater", name: "スペースヒーター", color: "#d06030", icon: "♨",  w: 1, h: 2, power:  -120, oxygen: 0, food: 0, water: 0, solid: false },
-    { id: "aquatuner",    name: "アクアチューナー", color: "#4080c0", icon: "❄",  w: 2, h: 2, power: -1200, oxygen: 0, food: 0, water: 0, solid: false },
+  "Refinement": { layer: "base", items: [
+    { id: "compost", category: "Refinement", name_en: "Compost", name_ja: "堆肥置き場", name: "堆肥置き場", color: "#A0714B", icon: "compost", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "algae_distiller", category: "Refinement", name_en: "Algae Distiller", name_ja: "藻類蒸留器", name: "藻類蒸留器", color: "#A0714B", icon: "algae_distiller", w: 3, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "rock_crusher", category: "Refinement", name_en: "Rock Crusher", name_ja: "岩石粉砕機", name: "岩石粉砕機", color: "#A0714B", icon: "rock_crusher", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "water_sieve", category: "Refinement", name_en: "Water Sieve", name_ja: "浄水器", name: "浄水器", color: "#A0714B", icon: "water_sieve", w: 4, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "desalinator", category: "Refinement", name_en: "Desalinator", name_ja: "脱塩器", name: "脱塩器", color: "#A0714B", icon: "desalinator", w: 4, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "ethanol_distiller", category: "Refinement", name_en: "Ethanol Distiller", name_ja: "エタノール蒸留器", name: "エタノール蒸留器", color: "#A0714B", icon: "ethanol_distiller", w: 4, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "metal_refinery", category: "Refinement", name_en: "Metal Refinery", name_ja: "金属精製装置", name: "金属精製装置", color: "#A0714B", icon: "metal_refinery", w: 3, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "kiln", category: "Refinement", name_en: "Kiln", name_ja: "製窯", name: "製窯", color: "#A0714B", icon: "kiln", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "polymer_press", category: "Refinement", name_en: "Polymer Press", name_ja: "プラスチック製造機", name: "プラスチック製造機", color: "#A0714B", icon: "polymer_press", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "oil_refinery", category: "Refinement", name_en: "Oil Refinery", name_ja: "原油精製所", name: "原油精製所", color: "#A0714B", icon: "oil_refinery", w: 4, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "oxylite_refinery", category: "Refinement", name_en: "Oxylite Refinery", name_ja: "オキシライト精製所", name: "オキシライト精製所", color: "#A0714B", icon: "oxylite_refinery", w: 3, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "glass_forge", category: "Refinement", name_en: "Glass Forge", name_ja: "ガラス溶鉱炉", name: "ガラス溶鉱炉", color: "#A0714B", icon: "glass_forge", w: 5, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "molecular_forge", category: "Refinement", name_en: "Molecular Forge", name_ja: "分子鍛造機", name: "分子鍛造機", color: "#A0714B", icon: "molecular_forge", w: 4, h: 5, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
   ]},
-
-  "間欠泉": { layer: "base", items: [
-    { id: "geyser_water",          name: "水の間欠泉",        color: "#3a8fd9", icon: "💧", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "geyser_polluted_water", name: "汚染水の間欠泉",    color: "#7a9a50", icon: "🤢", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "geyser_saltwater",      name: "塩水の間欠泉",      color: "#3a6ab0", icon: "🌊", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "geyser_slushwater",     name: "スラッシュ水",      color: "#60c0d8", icon: "🧊", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "geyser_cool_slush",     name: "冷却スラッシュ",    color: "#50a0c0", icon: "❄",  w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "geyser_cool_steam",     name: "冷却蒸気孔",        color: "#a0c8d0", icon: "☁",  w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "geyser_steam",          name: "蒸気孔",            color: "#d0b8a0", icon: "♨",  w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "geyser_hot_steam",      name: "高温蒸気孔",        color: "#d09080", icon: "🌋", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "geyser_nat_gas",        name: "天然ガス孔",        color: "#4dc8b0", icon: "⛽", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "geyser_hydrogen",       name: "水素間欠泉",        color: "#8090f0", icon: "H₂", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "geyser_co2",            name: "CO₂孔",             color: "#607060", icon: "CO₂",w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "geyser_polluted_o2",    name: "汚染酸素孔",        color: "#a0b840", icon: "PO₂",w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "geyser_chlorine",       name: "塩素孔",            color: "#c0d040", icon: "Cl₂",w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "geyser_oil",            name: "油田",              color: "#303030", icon: "🛢", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "volcano_iron",          name: "鉄火山",            color: "#c04820", icon: "🌋", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "volcano_copper",        name: "銅火山",            color: "#b06020", icon: "🌋", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "volcano_gold",          name: "金火山",            color: "#d0a020", icon: "🌋", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "volcano_aluminum",      name: "アルミ火山",        color: "#a0a8b0", icon: "🌋", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "volcano_cobalt",        name: "コバルト火山",      color: "#4060c0", icon: "🌋", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "volcano_tungsten",      name: "タングステン火山",  color: "#707878", icon: "🌋", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "volcano_niobium",       name: "ニオブ火山",        color: "#8060a0", icon: "🌋", w: 4, h: 2, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
-    { id: "volcano_main",          name: "火山",              color: "#e03010", icon: "🌋", w: 4, h: 4, power: 0, oxygen: 0, food: 0, water: 0, isGeyser: true, solid: true },
+  "Medicine": { layer: "base", items: [
+    { id: "wash_basin", category: "Medicine", name_en: "Wash Basin", name_ja: "手洗い器", name: "手洗い器", color: "#D75A78", icon: "wash_basin", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "sink", category: "Medicine", name_en: "Sink", name_ja: "洗面台", name: "洗面台", color: "#D75A78", icon: "sink", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "hand_sanitizer", category: "Medicine", name_en: "Hand Sanitizer", name_ja: "ハンドサニタイザー", name: "ハンドサニタイザー", color: "#D75A78", icon: "hand_sanitizer", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "massage_table", category: "Medicine", name_en: "Massage Table", name_ja: "マッサージベッド", name: "マッサージベッド", color: "#D75A78", icon: "massage_table", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "triage_cot", category: "Medicine", name_en: "Triage Cot", name_ja: "救急ベッド", name: "救急ベッド", color: "#D75A78", icon: "triage_cot", w: 3, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "sick_bay", category: "Medicine", name_en: "Sick Bay", name_ja: "病室ベッド", name: "病室ベッド", color: "#D75A78", icon: "sick_bay", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "disease_clinic", category: "Medicine", name_en: "Disease Clinic", name_ja: "高度医療病棟", name: "高度医療病棟", color: "#D75A78", icon: "disease_clinic", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "apothecary", category: "Medicine", name_en: "Apothecary", name_ja: "調剤器", name: "調剤器", color: "#D75A78", icon: "apothecary", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "tasteful_memorial", category: "Medicine", name_en: "Tasteful Memorial", name_ja: "立派な記念碑", name: "立派な記念碑", color: "#D75A78", icon: "tasteful_memorial", w: 1, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
   ]},
-
-  // ────────── plumbingレイヤー ──────────
-
-  "液体パイプ": { layer: "plumbing", items: [
-    { id: "liquid_pipe2",     name: "液体パイプ",     color: "#4a9adf", icon: "━", w: 1, h: 1, power:    0, oxygen: 0, food: 0, water: 0 },
-    { id: "liquid_pipe_ins",  name: "断熱液体パイプ", color: "#2060a0", icon: "┅", w: 1, h: 1, power:    0, oxygen: 0, food: 0, water: 0 },
-    { id: "liquid_pump2",     name: "液体ポンプ",     color: "#3070a8", icon: "⊕", w: 2, h: 2, power: -240, oxygen: 0, food: 0, water: 0 },
-    { id: "liquid_mini_pump", name: "液体ミニポンプ", color: "#5080b0", icon: "⊙", w: 1, h: 2, power: -120, oxygen: 0, food: 0, water: 0 },
-    { id: "liquid_valve",     name: "液体バルブ",     color: "#4080c0", icon: "⊘", w: 1, h: 1, power:    0, oxygen: 0, food: 0, water: 0 },
-    { id: "liquid_bridge",    name: "液体ブリッジ",   color: "#3870b0", icon: "╬", w: 1, h: 1, power:    0, oxygen: 0, food: 0, water: 0 },
-    { id: "liquid_vent",      name: "液体ベント",     color: "#5090c0", icon: "↓", w: 1, h: 1, power:    0, oxygen: 0, food: 0, water: 0 },
-    { id: "liquid_reservoir", name: "液体リザーバー", color: "#3060a8", icon: "🪣", w: 4, h: 3, power:    0, oxygen: 0, food: 0, water: 0 },
-    { id: "bottle_emptier",   name: "ボトル空注機",   color: "#4878b0", icon: "🫙", w: 1, h: 2, power:    0, oxygen: 0, food: 0, water: 0 },
+  "Furniture": { layer: "base", items: [
+    { id: "cot", category: "Furniture", name_en: "Cot", name_ja: "簡易ベッド", name: "簡易ベッド", color: "#9B83C7", icon: "cot", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "comfy_bed", category: "Furniture", name_en: "Comfy Bed", name_ja: "快適なベッド", name: "快適なベッド", color: "#9B83C7", icon: "comfy_bed", w: 4, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "mess_table", category: "Furniture", name_en: "Mess Table", name_ja: "食堂のテーブル", name: "食堂のテーブル", color: "#9B83C7", icon: "mess_table", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "floor_lamp", category: "Furniture", name_en: "Floor Lamp", name_ja: "フロアランプ", name: "フロアランプ", color: "#9B83C7", icon: "floor_lamp", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "ceiling_light", category: "Furniture", name_en: "Ceiling Light", name_ja: "天井灯", name: "天井灯", color: "#9B83C7", icon: "ceiling_light", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "sun_lamp", category: "Furniture", name_en: "Sun Lamp", name_ja: "サンランプ", name: "サンランプ", color: "#9B83C7", icon: "sun_lamp", w: 4, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "flower_pot", category: "Furniture", name_en: "Flower Pot", name_ja: "植木鉢", name: "植木鉢", color: "#9B83C7", icon: "flower_pot", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "flower_pot_hanging", category: "Furniture", name_en: "Flower Pot Hanging", name_ja: "吊り下げ鉢", name: "吊り下げ鉢", color: "#9B83C7", icon: "flower_pot_hanging", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "flower_pot_wall", category: "Furniture", name_en: "Flower Pot Wall", name_ja: "壁掛け鉢", name: "壁掛け鉢", color: "#9B83C7", icon: "flower_pot_wall", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "flower_pot_hanging_fancy", category: "Furniture", name_en: "Flower Pot Hanging Fancy", name_ja: "エアロポット", name: "エアロポット", color: "#9B83C7", icon: "flower_pot_hanging_fancy", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "sculpture_block", category: "Furniture", name_en: "Sculpture Block", name_ja: "彫刻のブロック", name: "彫刻のブロック", color: "#9B83C7", icon: "sculpture_block", w: 1, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "sculpture_block_large", category: "Furniture", name_en: "Sculpture Block Large", name_ja: "大型彫刻ブロック", name: "大型彫刻ブロック", color: "#9B83C7", icon: "sculpture_block_large", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "marble_sculpture_block", category: "Furniture", name_en: "Marble Sculpture Block", name_ja: "大理石のブロック", name: "大理石のブロック", color: "#9B83C7", icon: "marble_sculpture_block", w: 1, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "metal_sculpture_block", category: "Furniture", name_en: "Metal Sculpture Block", name_ja: "金属のブロック", name: "金属のブロック", color: "#9B83C7", icon: "metal_sculpture_block", w: 1, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "canvas", category: "Furniture", name_en: "Canvas", name_ja: "キャンバス", name: "キャンバス", color: "#9B83C7", icon: "canvas", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "canvas_tall", category: "Furniture", name_en: "Canvas Tall", name_ja: "縦長のキャンバス", name: "縦長のキャンバス", color: "#9B83C7", icon: "canvas_tall", w: 1, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "canvas_wide", category: "Furniture", name_en: "Canvas Wide", name_ja: "横長のキャンバス", name: "横長のキャンバス", color: "#9B83C7", icon: "canvas_wide", w: 3, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "monument_bottom", category: "Furniture", name_en: "Monument Bottom", name_ja: "記念碑（土台）", name: "記念碑（土台）", color: "#9B83C7", icon: "monument_bottom", w: 5, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "monument_middle", category: "Furniture", name_en: "Monument Middle", name_ja: "記念碑（中腹）", name: "記念碑（中腹）", color: "#9B83C7", icon: "monument_middle", w: 5, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "monument_top", category: "Furniture", name_en: "Monument Top", name_ja: "記念碑（頂上）", name: "記念碑（頂上）", color: "#9B83C7", icon: "monument_top", w: 5, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "water_cooler", category: "Furniture", name_en: "Water Cooler", name_ja: "ウォータークーラー", name: "ウォータークーラー", color: "#9B83C7", icon: "water_cooler", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "jukebot", category: "Furniture", name_en: "Jukebot", name_ja: "ジュークボックス", name: "ジュークボックス", color: "#9B83C7", icon: "jukebot", w: 3, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "arcade_cabinet", category: "Furniture", name_en: "Arcade Cabinet", name_ja: "アーケード筐体", name: "アーケード筐体", color: "#9B83C7", icon: "arcade_cabinet", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "espresso_machine", category: "Furniture", name_en: "Espresso Machine", name_ja: "エスプレッソマシン", name: "エスプレッソマシン", color: "#9B83C7", icon: "espresso_machine", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "soda_fountain", category: "Furniture", name_en: "Soda Fountain", name_ja: "ソーダサーバー", name: "ソーダサーバー", color: "#9B83C7", icon: "soda_fountain", w: 3, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "beach_chair", category: "Furniture", name_en: "Beach Chair", name_ja: "ビーチチェア", name: "ビーチチェア", color: "#9B83C7", icon: "beach_chair", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "sauna", category: "Furniture", name_en: "Sauna", name_ja: "サウナ", name: "サウナ", color: "#9B83C7", icon: "sauna", w: 3, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "hot_tub", category: "Furniture", name_en: "Hot Tub", name_ja: "温水プール", name: "温水プール", color: "#9B83C7", icon: "hot_tub", w: 5, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "vertical_wind_tunnel", category: "Furniture", name_en: "Vertical Wind Tunnel", name_ja: "垂直風洞タワー", name: "垂直風洞タワー", color: "#9B83C7", icon: "vertical_wind_tunnel", w: 5, h: 5, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "pixel_pack", category: "Furniture", name_en: "Pixel Pack", name_ja: "ピクセルパック", name: "ピクセルパック", color: "#9B83C7", icon: "pixel_pack", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "park_sign", category: "Furniture", name_en: "Park Sign", name_ja: "公園の看板", name: "公園の看板", color: "#9B83C7", icon: "park_sign", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "item_pedestal", category: "Furniture", name_en: "Item Pedestal", name_ja: "台座", name: "台座", color: "#9B83C7", icon: "item_pedestal", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
   ]},
-
-  // ────────── gasレイヤー ──────────
-
-  "ガスパイプ": { layer: "gas", items: [
-    { id: "gas_pipe",      name: "ガスパイプ",     color: "#6ac87a", icon: "━", w: 1, h: 1, power:    0, oxygen: 0, food: 0, water: 0 },
-    { id: "gas_pipe_ins",  name: "断熱ガスパイプ", color: "#408850", icon: "┅", w: 1, h: 1, power:    0, oxygen: 0, food: 0, water: 0 },
-    { id: "gas_pump",      name: "ガスポンプ",     color: "#50a860", icon: "⊕", w: 2, h: 2, power: -240, oxygen: 0, food: 0, water: 0 },
-    { id: "gas_mini_pump", name: "ガスミニポンプ", color: "#60b870", icon: "⊙", w: 1, h: 2, power: -120, oxygen: 0, food: 0, water: 0 },
-    { id: "gas_valve",     name: "ガスバルブ",     color: "#5ab06a", icon: "⊘", w: 1, h: 1, power:    0, oxygen: 0, food: 0, water: 0 },
-    { id: "gas_bridge",    name: "ガスブリッジ",   color: "#48a058", icon: "╬", w: 1, h: 1, power:    0, oxygen: 0, food: 0, water: 0 },
-    { id: "gas_vent",      name: "ガスベント",     color: "#70c880", icon: "↑", w: 1, h: 1, power:    0, oxygen: 0, food: 0, water: 0 },
-    { id: "gas_vent_high", name: "高圧ガスベント", color: "#90d898", icon: "⇑", w: 1, h: 1, power:    0, oxygen: 0, food: 0, water: 0 },
-    { id: "gas_reservoir", name: "ガスリザーバー", color: "#3a8848", icon: "🫧", w: 4, h: 3, power:    0, oxygen: 0, food: 0, water: 0 },
-    { id: "gas_filter",    name: "ガスフィルター", color: "#70a870", icon: "⧖", w: 2, h: 2, power: -120, oxygen: 0, food: 0, water: 0 },
+  "Stations": { layer: "base", items: [
+    { id: "research_center", category: "Stations", name_en: "Research Center", name_ja: "研究ステーション", name: "研究ステーション", color: "#6B8ED6", icon: "research_center", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "advanced_research_center", category: "Stations", name_en: "Advanced Research Center", name_ja: "スーパーコンピューター", name: "スーパーコンピューター", color: "#6B8ED6", icon: "advanced_research_center", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "cosmic_research_center", category: "Stations", name_en: "Cosmic Research Center", name_ja: "バーチャルプラネタリウム", name: "バーチャルプラネタリウム", color: "#6B8ED6", icon: "cosmic_research_center", w: 4, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "crafting_table", category: "Stations", name_en: "Crafting Table", name_ja: "工作端末", name: "工作端末", color: "#6B8ED6", icon: "crafting_table", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "clothing_fabricator", category: "Stations", name_en: "Clothing Fabricator", name_ja: "繊維織機", name: "繊維織機", color: "#6B8ED6", icon: "clothing_fabricator", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "clothing_alteration_station", category: "Stations", name_en: "Clothing Alteration Station", name_ja: "衣服改造ステーション", name: "衣服改造ステーション", color: "#6B8ED6", icon: "clothing_alteration_station", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "suit_fabricator", category: "Stations", name_en: "Suit Fabricator", name_ja: "外骨格鍛造機", name: "外骨格鍛造機", color: "#6B8ED6", icon: "suit_fabricator", w: 3, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "suit_marker", category: "Stations", name_en: "Suit Marker", name_ja: "アトモスーツチェックポイント", name: "アトモスーツチェックポイント", color: "#6B8ED6", icon: "suit_marker", w: 1, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "suit_locker", category: "Stations", name_en: "Suit Locker", name_ja: "アトモスーツドック", name: "アトモスーツドック", color: "#6B8ED6", icon: "suit_locker", w: 1, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "jet_suit_marker", category: "Stations", name_en: "Jet Suit Marker", name_ja: "ジェットスーツチェックポイント", name: "ジェットスーツチェックポイント", color: "#6B8ED6", icon: "jet_suit_marker", w: 1, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "jet_suit_locker", category: "Stations", name_en: "Jet Suit Locker", name_ja: "ジェットスーツドック", name: "ジェットスーツドック", color: "#6B8ED6", icon: "jet_suit_locker", w: 1, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "oxygen_mask_marker", category: "Stations", name_en: "Oxygen Mask Marker", name_ja: "酸素マスクチェックポイント", name: "酸素マスクチェックポイント", color: "#6B8ED6", icon: "oxygen_mask_marker", w: 1, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "oxygen_mask_locker", category: "Stations", name_en: "Oxygen Mask Locker", name_ja: "酸素マスクドック", name: "酸素マスクドック", color: "#6B8ED6", icon: "oxygen_mask_locker", w: 1, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "grooming_station", category: "Stations", name_en: "Grooming Station", name_ja: "毛づくろい端末", name: "毛づくろい端末", color: "#6B8ED6", icon: "grooming_station", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "shearing_station", category: "Stations", name_en: "Shearing Station", name_ja: "毛刈り端末", name: "毛刈り端末", color: "#6B8ED6", icon: "shearing_station", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "milking_station", category: "Stations", name_en: "Milking Station", name_ja: "搾乳端末", name: "搾乳端末", color: "#6B8ED6", icon: "milking_station", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "farm_station", category: "Stations", name_en: "Farm Station", name_ja: "農業端末", name: "農業端末", color: "#6B8ED6", icon: "farm_station", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "power_control_station", category: "Stations", name_en: "Power Control Station", name_ja: "発電制御端末", name: "発電制御端末", color: "#6B8ED6", icon: "power_control_station", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "skill_scrubber", category: "Stations", name_en: "Skill Scrubber", name_ja: "スキル除去機", name: "スキル除去機", color: "#6B8ED6", icon: "skill_scrubber", w: 3, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "geo_tuner", category: "Stations", name_en: "Geo Tuner", name_ja: "ジオチューナー", name: "ジオチューナー", color: "#6B8ED6", icon: "geo_tuner", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "blastshot_maker", category: "Stations", name_en: "Blastshot Maker", name_ja: "ブラストショット製造機", name: "ブラストショット製造機", color: "#6B8ED6", icon: "blastshot_maker", w: 3, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
   ]},
-
-  // ────────── electricalレイヤー ──────────
-
-  "電気配線": { layer: "electrical", items: [
-    { id: "wire",           name: "電線（通常）", color: "#c8a030", icon: "━", w: 1, h: 1, power: 0, oxygen: 0, food: 0, water: 0 },
-    { id: "wire_refined",   name: "精錬金属電線", color: "#e0c050", icon: "━", w: 1, h: 1, power: 0, oxygen: 0, food: 0, water: 0 },
-    { id: "wire_heavy",     name: "重電線",       color: "#d08820", icon: "═", w: 1, h: 1, power: 0, oxygen: 0, food: 0, water: 0 },
-    { id: "wire_conductive",name: "伝導性電線",   color: "#f0d060", icon: "╌", w: 1, h: 1, power: 0, oxygen: 0, food: 0, water: 0 },
-    { id: "transformer",    name: "変圧器（大）", color: "#7070c8", icon: "⊛", w: 2, h: 2, power: 0, oxygen: 0, food: 0, water: 0 },
-    { id: "transformer_sm", name: "変圧器（小）", color: "#8080d0", icon: "⊚", w: 1, h: 2, power: 0, oxygen: 0, food: 0, water: 0 },
-    { id: "wire_bridge",    name: "電気ブリッジ", color: "#b09030", icon: "╬", w: 1, h: 1, power: 0, oxygen: 0, food: 0, water: 0 },
-    { id: "power_switch",   name: "電源スイッチ", color: "#d0a040", icon: "⏻", w: 1, h: 1, power: 0, oxygen: 0, food: 0, water: 0 },
+  "Utilities": { layer: "base", items: [
+    { id: "space_heater", category: "Utilities", name_en: "Space Heater", name_ja: "空間ヒーター", name: "空間ヒーター", color: "#C05E46", icon: "space_heater", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "liquid_tepidizer", category: "Utilities", name_en: "Liquid Tepidizer", name_ja: "液体テピディザー", name: "液体テピディザー", color: "#C05E46", icon: "liquid_tepidizer", w: 4, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "ice_maker", category: "Utilities", name_en: "Ice Maker", name_ja: "製氷機", name: "製氷機", color: "#C05E46", icon: "ice_maker", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "ice_cooled_fan", category: "Utilities", name_en: "Ice Cooled Fan", name_ja: "アイスEファン", name: "アイスEファン", color: "#C05E46", icon: "ice_cooled_fan", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "thermo_aquatuner", category: "Utilities", name_en: "Thermo Aquatuner", name_ja: "液体クーラー", name: "液体クーラー", color: "#C05E46", icon: "thermo_aquatuner", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "gas_thermo_regulator", category: "Utilities", name_en: "Gas Thermo Regulator", name_ja: "気体クーラー", name: "気体クーラー", color: "#C05E46", icon: "gas_thermo_regulator", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "tempshift_plate", category: "Utilities", name_en: "Tempshift Plate", name_ja: "熱交換プレート", name: "熱交換プレート", color: "#C05E46", icon: "tempshift_plate", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "ore_scrubber", category: "Utilities", name_en: "Ore Scrubber", name_ja: "鉱石スクラバー", name: "鉱石スクラバー", color: "#C05E46", icon: "ore_scrubber", w: 2, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "oil_well_cap", category: "Utilities", name_en: "Oil Well Cap", name_ja: "油井", name: "油井", color: "#C05E46", icon: "oil_well_cap", w: 4, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "sweep_bot_station", category: "Utilities", name_en: "Sweep Bot Station", name_ja: "スウィーピードック", name: "スウィーピードック", color: "#C05E46", icon: "sweep_bot_station", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
   ]},
-
-  // ────────── automationレイヤー ──────────
-
-  "自動化": { layer: "automation", items: [
-    { id: "auto_wire",       name: "自動化ワイヤー",   color: "#c060e0", icon: "━", w: 1, h: 1, power:   0, oxygen: 0, food: 0, water: 0 },
-    { id: "auto_bridge",     name: "自動化ブリッジ",   color: "#a040c0", icon: "╬", w: 1, h: 1, power:   0, oxygen: 0, food: 0, water: 0 },
-    { id: "hydro_sensor",    name: "水位センサー",     color: "#4090e0", icon: "〰", w: 1, h: 1, power: -10, oxygen: 0, food: 0, water: 0 },
-    { id: "thermo_sensor",   name: "温度センサー",     color: "#e05030", icon: "🌡", w: 1, h: 1, power: -10, oxygen: 0, food: 0, water: 0 },
-    { id: "atmo_sensor",     name: "気圧センサー",     color: "#60c090", icon: "◉", w: 1, h: 1, power: -10, oxygen: 0, food: 0, water: 0 },
-    { id: "element_sensor",  name: "属性センサー",     color: "#9070d0", icon: "◈", w: 1, h: 1, power: -10, oxygen: 0, food: 0, water: 0 },
-    { id: "logic_gate_and",  name: "AND ゲート",       color: "#a050d0", icon: "&",  w: 2, h: 1, power: -10, oxygen: 0, food: 0, water: 0 },
-    { id: "logic_gate_or",   name: "OR ゲート",        color: "#b050d0", icon: "≥1", w: 2, h: 1, power: -10, oxygen: 0, food: 0, water: 0 },
-    { id: "logic_gate_not",  name: "NOT ゲート",       color: "#c050d0", icon: "!",  w: 1, h: 1, power: -10, oxygen: 0, food: 0, water: 0 },
-    { id: "signal_switch",   name: "シグナルスイッチ", color: "#d070f0", icon: "⏎",  w: 1, h: 2, power:   0, oxygen: 0, food: 0, water: 0 },
+  "Automation": { layer: "automation", items: [
+    { id: "space_scanner", category: "Automation", name_en: "Space Scanner", name_ja: "スペーススキャナー", name: "スペーススキャナー", color: "#B75BD6", icon: "space_scanner", w: 4, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+  ]},
+  "Shipping": { layer: "base", items: [
+    { id: "auto_sweeper", category: "Shipping", name_en: "Auto Sweeper", name_ja: "自動掃除機", name: "自動掃除機", color: "#C89C3C", icon: "auto_sweeper", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "solid_conveyor_loader", category: "Shipping", name_en: "Solid Conveyor Loader", name_ja: "コンベアローダー", name: "コンベアローダー", color: "#C89C3C", icon: "solid_conveyor_loader", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "solid_conveyor_receiver", category: "Shipping", name_en: "Solid Conveyor Receiver", name_ja: "コンベアレセプタクル", name: "コンベアレセプタクル", color: "#C89C3C", icon: "solid_conveyor_receiver", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "solid_vent", category: "Shipping", name_en: "Solid Vent", name_ja: "コンベアシュート", name: "コンベアシュート", color: "#C89C3C", icon: "solid_vent", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "solid_filter", category: "Shipping", name_en: "Solid Filter", name_ja: "固体フィルター", name: "固体フィルター", color: "#C89C3C", icon: "solid_filter", w: 3, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "robo_miner", category: "Shipping", name_en: "Robo Miner", name_ja: "自動採掘機", name: "自動採掘機", color: "#C89C3C", icon: "robo_miner", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "solid_meter", category: "Shipping", name_en: "Solid Meter", name_ja: "コンベア流量計", name: "コンベア流量計", color: "#C89C3C", icon: "solid_meter", w: 1, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+  ]},
+  "Rocketry": { layer: "base", items: [
+    { id: "gantry", category: "Rocketry", name_en: "Gantry", name_ja: "ガントリー", name: "ガントリー", color: "#7D8BA8", icon: "gantry", w: 5, h: 1, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "command_capsule", category: "Rocketry", name_en: "Command Capsule", name_ja: "管制タワー", name: "管制タワー", color: "#7D8BA8", icon: "command_capsule", w: 3, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "research_module", category: "Rocketry", name_en: "Research Module", name_ja: "研究モジュール", name: "研究モジュール", color: "#7D8BA8", icon: "research_module", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "sightseeing_module", category: "Rocketry", name_en: "Sightseeing Module", name_ja: "観光モジュール", name: "観光モジュール", color: "#7D8BA8", icon: "sightseeing_module", w: 3, h: 5, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "cargo_bay", category: "Rocketry", name_en: "Cargo Bay", name_ja: "貨物ベイ", name: "貨物ベイ", color: "#7D8BA8", icon: "cargo_bay", w: 3, h: 5, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "liquid_cargo_bay", category: "Rocketry", name_en: "Liquid Cargo Bay", name_ja: "液体貨物タンク", name: "液体貨物タンク", color: "#7D8BA8", icon: "liquid_cargo_bay", w: 3, h: 5, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "gas_cargo_bay", category: "Rocketry", name_en: "Gas Cargo Bay", name_ja: "気体貨物タンク", name: "気体貨物タンク", color: "#7D8BA8", icon: "gas_cargo_bay", w: 3, h: 5, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "biological_cargo_bay", category: "Rocketry", name_en: "Biological Cargo Bay", name_ja: "生物貨物ベイ", name: "生物貨物ベイ", color: "#7D8BA8", icon: "biological_cargo_bay", w: 3, h: 5, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "steam_engine", category: "Rocketry", name_en: "Steam Engine", name_ja: "蒸気エンジン", name: "蒸気エンジン", color: "#7D8BA8", icon: "steam_engine", w: 3, h: 5, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "solid_fuel_rocket_brooster", category: "Rocketry", name_en: "Solid Fuel Rocket Brooster", name_ja: "固体燃料ブースター", name: "固体燃料ブースター", color: "#7D8BA8", icon: "solid_fuel_rocket_brooster", w: 3, h: 5, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "petroleum_engine", category: "Rocketry", name_en: "Petroleum Engine", name_ja: "石油エンジン", name: "石油エンジン", color: "#7D8BA8", icon: "petroleum_engine", w: 3, h: 5, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "hydrogen_engine", category: "Rocketry", name_en: "Hydrogen Engine", name_ja: "水素エンジン", name: "水素エンジン", color: "#7D8BA8", icon: "hydrogen_engine", w: 3, h: 5, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "liquid_fuel_tank", category: "Rocketry", name_en: "Liquid Fuel Tank", name_ja: "液体燃料タンク", name: "液体燃料タンク", color: "#7D8BA8", icon: "liquid_fuel_tank", w: 3, h: 5, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "oxidizer_tank", category: "Rocketry", name_en: "Oxidizer Tank", name_ja: "固体酸化剤タンク", name: "固体酸化剤タンク", color: "#7D8BA8", icon: "oxidizer_tank", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "oxidizer_tank_liquid", category: "Rocketry", name_en: "Oxidizer Tank Liquid", name_ja: "液体酸化剤タンク", name: "液体酸化剤タンク", color: "#7D8BA8", icon: "oxidizer_tank_liquid", w: 3, h: 5, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "mission_control_station", category: "Rocketry", name_en: "Mission Control Station", name_ja: "ミッションコントロールステーション", name: "ミッションコントロールステーション", color: "#7D8BA8", icon: "mission_control_station", w: 3, h: 3, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "meteor_blaster", category: "Rocketry", name_en: "Meteor Blaster", name_ja: "気象レーザー（流星破壊機）", name: "気象レーザー（流星破壊機）", color: "#7D8BA8", icon: "meteor_blaster", w: 3, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+  ]},
+  "Special": { layer: "base", items: [
+    { id: "printing_pod", category: "Special", name_en: "Printing Pod", name_ja: "ポッド（旅の始まりのポッド）", name: "ポッド（旅の始まりのポッド）", color: "#E05A2A", icon: "printing_pod", w: 3, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "anti_entropy_nullifier", category: "Special", name_en: "Anti Entropy Nullifier", name_ja: "熱無効化装置 (AETN)", name: "熱無効化装置 (AETN)", color: "#E05A2A", icon: "anti_entropy_nullifier", w: 4, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "neural_vacillator", category: "Special", name_en: "Neural Vacillator", name_ja: "神経シャッフル器", name: "神経シャッフル器", color: "#E05A2A", icon: "neural_vacillator", w: 3, h: 4, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "vending_machine", category: "Special", name_en: "Vending Machine", name_ja: "自動販売機", name: "自動販売機", color: "#E05A2A", icon: "vending_machine", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "locker", category: "Special", name_en: "Locker", name_ja: "ロッカー", name: "ロッカー", color: "#E05A2A", icon: "locker", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "computer_desk", category: "Special", name_en: "Computer Desk", name_ja: "事務机", name: "事務机", color: "#E05A2A", icon: "computer_desk", w: 3, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "prop_table", category: "Special", name_en: "Prop Table", name_ja: "テーブル", name: "テーブル", color: "#E05A2A", icon: "prop_table", w: 2, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "security_door", category: "Special", name_en: "Security Door", name_ja: "セキュリティドア", name: "セキュリティドア", color: "#E05A2A", icon: "security_door", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
+    { id: "light_fixture", category: "Special", name_en: "Light Fixture", name_ja: "照明装置（遺跡）", name: "照明装置（遺跡）", color: "#E05A2A", icon: "light_fixture", w: 1, h: 2, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false },
   ]},
 };
 
-// id → 建物オブジェクト の逆引きマップ（rooms.js で使用）
 const BUILDING_MAP = (() => {
   const map = {};
   for (const def of Object.values(BUILDINGS)) {
@@ -228,123 +278,44 @@ const BUILDING_MAP = (() => {
   return map;
 })();
 
-// カテゴリ名 → 代表カラー（サイドバー凡例用）
-const CAT_COLORS = {
-  "基本":     "#a0a8b8",
-  "酸素":     "#4a90d9",
-  "電力":     "#e08c2b",
-  "食料":     "#6aad3a",
-  "デュプ設備": "#8080c0",
-  "水・液体": "#3070a8",
-  "温度・ガス": "#a04030",
-  "間欠泉":   "#e03010",
-  "液体パイプ": "#4a9adf",
-  "ガスパイプ": "#6ac87a",
-  "電気配線": "#f0c040",
-  "自動化":   "#c060e0",
+const PRINTING_POD = {
+  ...BUILDING_MAP.printing_pod,
+  fixed: true,
+  layer: "base",
+  solid: false,
 };
 
-// ── 部屋タイプ定義 ───────────────────────────────────────────
-// required   : いずれか1つ含まれればOK（OR条件）
-// forbidden  : 1つでも含まれていたらその部屋タイプは不成立
-// minTiles   : 内部空気セル数の最小値
-// maxTiles   : 内部空気セル数の最大値
+const CAT_COLORS = {
+  "Base": "#8FA3B8",
+  "Oxygen": "#4A90D9",
+  "Power": "#E0A22B",
+  "Food": "#74A843",
+  "Plumbing": "#3B82C4",
+  "Ventilation": "#54A86A",
+  "Refinement": "#A0714B",
+  "Medicine": "#D75A78",
+  "Furniture": "#9B83C7",
+  "Stations": "#6B8ED6",
+  "Utilities": "#C05E46",
+  "Automation": "#B75BD6",
+  "Shipping": "#C89C3C",
+  "Rocketry": "#7D8BA8",
+  "Special": "#E05A2A",
+};
+
 const ROOM_TYPES = [
   {
     id: "barracks", name: "兵舎", color: "#6060c0",
     minTiles: 12, maxTiles: 96,
-    required:  ["cot", "bed_luxury"],
-    forbidden: ["toilet","lavatory","sink","grill","microbe_musher","bbq","egg_cracker","farm_tile","hydroponic","research","research_advanced","telescope"],
-    desc: "コット必須・最大96マス",
-  },
-  {
-    id: "bedroom", name: "寝室", color: "#4050d0",
-    minTiles: 12, maxTiles: 96,
-    required:  ["bed_luxury"],
-    forbidden: ["toilet","lavatory","sink","grill","microbe_musher","bbq","egg_cracker","farm_tile","hydroponic","research","research_advanced","telescope","cot"],
-    desc: "高級ベッド必須・最大96マス",
-  },
-  {
-    id: "great_hall", name: "大広間", color: "#c07030",
-    minTiles: 12, maxTiles: 96,
-    required:  ["dining_table"],
-    forbidden: ["toilet","lavatory","cot","bed_luxury"],
-    desc: "食卓必須・最大96マス",
+    required: ["bed"],
+    forbidden: ["flush_toilet", "lavatory", "sink"],
+    desc: "ベッドが必要",
   },
   {
     id: "washroom", name: "洗面所", color: "#5090c8",
     minTiles: 12, maxTiles: 96,
-    required:  ["lavatory","sink"],
-    forbidden: ["cot","bed_luxury","grill","microbe_musher","bbq","egg_cracker","farm_tile","hydroponic","research","research_advanced","telescope"],
-    desc: "洗面台か洗い場が必須",
-  },
-  {
-    id: "latrine", name: "トイレ", color: "#8060c0",
-    minTiles: 12, maxTiles: 96,
-    required:  ["toilet","outhouse"],
-    forbidden: ["cot","bed_luxury","lavatory"],
-    desc: "トイレ必須・最大96マス",
-  },
-  {
-    id: "kitchen", name: "厨房", color: "#d07830",
-    minTiles: 12, maxTiles: 96,
-    required:  ["grill","microbe_musher","bbq","egg_cracker"],
-    forbidden: ["cot","bed_luxury","toilet","lavatory","farm_tile","hydroponic","research","research_advanced","telescope"],
-    desc: "調理施設必須・最大96マス",
-  },
-  {
-    id: "farm", name: "農場", color: "#50a030",
-    minTiles: 12, maxTiles: 96,
-    required:  ["farm_tile","hydroponic"],
-    forbidden: ["cot","bed_luxury","toilet","lavatory","research","research_advanced","telescope"],
-    desc: "農場タイルか水耕栽培タイル必須",
-  },
-  {
-    id: "rec_room", name: "娯楽室", color: "#d060a0",
-    minTiles: 12, maxTiles: 96,
-    required:  ["recreation","massage_table","espresso_machine"],
-    forbidden: ["cot","bed_luxury","toilet","lavatory","farm_tile","hydroponic"],
-    desc: "娯楽設備必須・最大96マス",
-  },
-  {
-    id: "lab", name: "研究室", color: "#5070d0",
-    minTiles: 12, maxTiles: 96,
-    required:  ["research","research_advanced","telescope"],
-    forbidden: ["cot","bed_luxury","toilet","lavatory","farm_tile","hydroponic"],
-    desc: "研究台か天体望遠鏡必須",
-  },
-  {
-    id: "hospital", name: "病院", color: "#d04060",
-    minTiles: 12, maxTiles: 96,
-    required:  ["med_bay","triage","sick_bay"],
-    forbidden: ["cot","bed_luxury","toilet","lavatory","farm_tile","hydroponic"],
-    desc: "医療施設必須・最大96マス",
-  },
-  {
-    id: "stable", name: "牧場", color: "#a06020",
-    minTiles: 12, maxTiles: 96,
-    required:  ["grooming_station","shearing_machine"],
-    forbidden: ["cot","bed_luxury","toilet","lavatory"],
-    desc: "お手入れステーション必須",
-  },
-  {
-    id: "power_plant", name: "発電所", color: "#d08020",
-    minTiles: 12, maxTiles: 96,
-    required:  ["manual_gen","coal_gen","hamster_wheel","nat_gas_gen","solar_panel","steam_turbine","petroleum_gen","wood_gen","hydrogen_gen"],
-    forbidden: ["cot","bed_luxury","toilet","lavatory","farm_tile","hydroponic","research","research_advanced"],
-    desc: "発電機必須・最大96マス",
-  },
-  {
-    id: "nature_reserve", name: "自然保護区", color: "#308050",
-    minTiles: 16, maxTiles: 3600,
-    required:  [],
-    forbidden: ["tile","mesh_tile","tile_bunker","tile_glass","ladder","airlock","door","travel_tube",
-                "electrolyzer","algae_deox","rust_deox","deodorizer","air_filter",
-                "manual_gen","coal_gen","hamster_wheel","nat_gas_gen","solar_panel","steam_turbine",
-                "battery","smart_battery","farm_tile","hydroponic","grill","microbe_musher","bbq",
-                "egg_cracker","refrigerator","sink","toilet","lavatory","liquid_pump","water_sieve",
-                "desalinator","thermo_reg","space_heater","aquatuner","cot","bed_luxury",
-                "recreation","research","storage","med_bay","triage"],
-    desc: "人工物禁止・16〜3600マス",
+    required: ["lavatory", "sink"],
+    forbidden: ["bed"],
+    desc: "洗面台または洗い場が必要",
   },
 ];

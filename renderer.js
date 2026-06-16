@@ -45,6 +45,13 @@ const Renderer = (() => {
     return { x: col * s + panX, y: row * s + panY };
   }
 
+  function _iconLabel(b) {
+    const words = (b.name_en || b.id || "")
+      .split(/\s+|_/)
+      .filter(Boolean);
+    return words.slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
+  }
+
   // ── グリッド線 ───────────────────────────────────────────
   function _drawGrid() {
     const { panX, panY } = Store.getState();
@@ -184,7 +191,7 @@ const Renderer = (() => {
         ctx.font         = `${Math.min(s * 0.6, 16)}px sans-serif`;
         ctx.textAlign    = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(b.icon, sc.x + bw / 2, sc.y + bh / 2);
+        ctx.fillText(_iconLabel(b), sc.x + bw / 2, sc.y + bh / 2);
       }
 
       // 建物名ラベル（幅が広い建物のみ）
@@ -222,11 +229,13 @@ const Renderer = (() => {
     if (!selectedBuilding || (tool !== "place") || !lastMouse) return;
 
     const { col, row } = toGrid(lastMouse.x, lastMouse.y);
-    const sc    = _toScreen(col, row);
+    const left  = col - selectedBuilding.w + 1;
+    const top   = row - selectedBuilding.h + 1;
+    const sc    = _toScreen(left, top);
     const s     = _cs();
-    const valid = col >= 0 && row >= 0
-               && col + selectedBuilding.w <= GRID_COLS
-               && row + selectedBuilding.h <= GRID_ROWS;
+    const valid = left >= 0 && top >= 0
+               && col < GRID_COLS
+               && row < GRID_ROWS;
 
     _ctx.fillStyle   = valid ? "rgba(90,160,255,0.18)" : "rgba(255,80,80,0.18)";
     _ctx.strokeStyle = valid ? "rgba(90,160,255,0.8)"  : "rgba(255,80,80,0.8)";

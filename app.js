@@ -13,20 +13,23 @@ const App = (() => {
   function placeBuilding(col, row) {
     const { selectedBuilding, activeLayer } = Store.getState();
     if (!selectedBuilding) return;
-    if (col < 0 || row < 0
-      || col + selectedBuilding.w > GRID_COLS
-      || row + selectedBuilding.h > GRID_ROWS) return;
+    const left = col - selectedBuilding.w + 1;
+    const top  = row - selectedBuilding.h + 1;
+    if (left < 0 || top < 0 || col >= GRID_COLS || row >= GRID_ROWS) return;
 
     const grid = Store.getLayerGrid(activeLayer);
-    const b    = { ...selectedBuilding };
+    const b    = { ...selectedBuilding, origin: "bottom_right" };
+    const ref  = `${left},${top}`;
 
     for (let dc = 0; dc < b.w; dc++) {
       for (let dr = 0; dr < b.h; dr++) {
-        const key    = `${col + dc},${row + dr}`;
+        const cellCol = left + dc;
+        const cellRow = top + dr;
+        const key    = `${cellCol},${cellRow}`;
         const before = grid[key] ?? null;
         const after  = (dc === 0 && dr === 0)
           ? b
-          : { ...b, ref: `${col},${row}` };
+          : { ...b, ref };
         Store.recordCellDiff(key, before, after);
         Store.setCell(activeLayer, key, after);
       }
@@ -298,29 +301,15 @@ const App = (() => {
     // スマホ: ボトムバーの建物パレット開閉
     const paletteToggle = document.getElementById("palette-toggle");
     const paletteDrawer = document.getElementById("palette-drawer");
-    const roomsToggle   = document.getElementById("rooms-toggle");
-    const rightPanel    = document.getElementById("right-panel");
     if (paletteToggle && paletteDrawer) {
       paletteToggle.addEventListener("click", () => {
         paletteDrawer.classList.toggle("open");
         paletteToggle.classList.toggle("active");
-        rightPanel?.classList.remove("mobile-open");
-        roomsToggle?.classList.remove("active");
       });
       // パレット外タップで閉じる
       document.getElementById("main-canvas")?.addEventListener("pointerdown", () => {
         paletteDrawer.classList.remove("open");
         paletteToggle.classList.remove("active");
-        rightPanel?.classList.remove("mobile-open");
-        roomsToggle?.classList.remove("active");
-      });
-    }
-    if (roomsToggle && rightPanel) {
-      roomsToggle.addEventListener("click", () => {
-        rightPanel.classList.toggle("mobile-open");
-        roomsToggle.classList.toggle("active");
-        paletteDrawer?.classList.remove("open");
-        paletteToggle?.classList.remove("active");
       });
     }
   }

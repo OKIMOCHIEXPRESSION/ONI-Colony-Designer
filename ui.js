@@ -6,6 +6,13 @@
 
 const UI = (() => {
 
+  function _iconLabel(b) {
+    const words = (b.name_en || b.id || "")
+      .split(/\s+|_/)
+      .filter(Boolean);
+    return words.slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
+  }
+
   // ── Undo/Redo ボタン状態更新 ─────────────────────────────────
   function updateUndoButtons() {
     const canUndo = Store.canUndo();
@@ -162,36 +169,34 @@ const UI = (() => {
     for (const [cat, def] of Object.entries(BUILDINGS)) {
       if (filterLayer !== "all" && def.layer !== filterLayer) continue;
 
-      for (const target of [catEl, catElM].filter(Boolean)) {
-        const label = document.createElement("div");
-        label.className   = "cat-label";
-        label.textContent = cat;
-        target.appendChild(label);
+      const label = document.createElement("div");
+      label.className   = "cat-label";
+      label.textContent = cat;
+      catEl.appendChild(label);
 
-        for (const b of def.items) {
-          const btn = document.createElement("button");
-          btn.className = "building-btn";
-          const lc = LAYERS[def.layer].color;
-          btn.innerHTML = [
-            `<span class="b-icon" style="background:${b.color}22;color:${b.color}">${b.icon}</span>`,
-            `<span>${b.name}</span>`,
-            `<span class="b-layer-dot" style="background:${lc}"></span>`,
-            `<span class="b-size">${b.w}×${b.h}</span>`,
-          ].join("");
+      for (const b of def.items) {
+        const btn = document.createElement("button");
+        btn.className = "building-btn";
+        const lc = LAYERS[def.layer].color;
+        btn.innerHTML = [
+          `<span class="b-icon" title="${b.icon}" style="background:${b.color}22;color:${b.color}">${_iconLabel(b)}</span>`,
+          `<span>${b.name}</span>`,
+          `<span class="b-layer-dot" style="background:${lc}"></span>`,
+          `<span class="b-size">${b.w}×${b.h}</span>`,
+        ].join("");
 
-          btn._buildingData = { ...b, layer: def.layer };
-          btn.addEventListener("click", () => {
-            document.querySelectorAll(".building-btn").forEach(x => x.classList.remove("selected"));
-            btn.classList.add("selected");
-            Store.setState({ selectedBuilding: { ...b, layer: def.layer } });
-            switchLayer(def.layer);
-            const lbl = document.getElementById("selected-label");
-            if (lbl) lbl.textContent = `${b.name} (${b.w}×${b.h})`;
-            setTool("place");
-          });
+        btn._buildingData = { ...b, layer: def.layer };
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".building-btn").forEach(x => x.classList.remove("selected"));
+          btn.classList.add("selected");
+          Store.setState({ selectedBuilding: { ...b, layer: def.layer } });
+          switchLayer(def.layer);
+          const lbl = document.getElementById("selected-label");
+          if (lbl) lbl.textContent = `${b.name} (${b.w}×${b.h})`;
+          setTool("place");
+        });
 
-          target.appendChild(btn);
-        }
+        catEl.appendChild(btn);
       }
 
       const li = document.createElement("div");
