@@ -294,13 +294,22 @@ const Input = (() => {
 
   function _commitDrawIfNeeded() {
     if (!_isDrawing) return;
+
+    const op = _drawOp;
+
     _isDrawing    = false;
     _drawOp       = null;
     _lastDrawCell = null;
-    Store.commitStroke();
+
+    const committed = Store.commitStroke();
+
     UI.updateUndoButtons();
     App.runRoomDetection();   // run full room detection once per stroke on pointerup
     _updateCursor();
+
+    if (committed && op === "place") {
+      window.umami?.track("place_building");
+    }
   }
 
   /**
