@@ -34,7 +34,7 @@ const App = (() => {
         Store.setCell(activeLayer, key, after);
       }
     }
-    _afterEdit();
+    _afterEditDraw();
   }
 
   function eraseBuilding(col, row) {
@@ -58,16 +58,31 @@ const App = (() => {
         Store.setCell(activeLayer, k, null);
       }
     }
-    _afterEdit();
+    _afterEditDraw();
   }
 
-  function _afterEdit() {
+  /** Called during drag strokes — updates visuals, skips expensive room detection. */
+  function _afterEditDraw() {
+    UI.updateStats();
+    Renderer.draw();
+    Input.refreshMinimap();
+  }
+
+  /** Called on commit events — runs full room detection. */
+  function _afterEditFull() {
     UI.updateStats();
     const rooms = RoomDetector.detect();
     Store.setState({ detectedRooms: rooms });
     UI.updateRoomPanel(rooms);
     Renderer.draw();
     Input.refreshMinimap();
+  }
+
+  /** Public: input.js calls this on pointerup to run room detection after a stroke. */
+  function runRoomDetection() {
+    const rooms = RoomDetector.detect();
+    Store.setState({ detectedRooms: rooms });
+    UI.updateRoomPanel(rooms);
   }
 
   // ── 全消去 ──────────────────────────────────────────────
@@ -88,7 +103,7 @@ const App = (() => {
     }
     Store.pushCommand("全消去", activeLayer, diffs);
     UI.updateUndoButtons();
-    _afterEdit();
+    _afterEditFull();
   }
 
   // ── ロード ──────────────────────────────────────────────
@@ -112,7 +127,7 @@ const App = (() => {
         }
         Store.pushCommand("ファイル読込", "multi", diffs);
         UI.updateUndoButtons();
-        _afterEdit();
+        _afterEditFull();
         UI.showToast(I18n.t("toast.loaded"));
       } catch {
         UI.showToast(I18n.t("toast.load_error"));
@@ -129,7 +144,7 @@ const App = (() => {
     const info = Store.getHistoryInfo();
     Store.undo();
     UI.updateUndoButtons();
-    _afterEdit();
+    _afterEditFull();
     UI.showToast(`Undo: ${info.lastLabel}`);
   }
 
@@ -138,7 +153,7 @@ const App = (() => {
     const info = Store.getHistoryInfo();
     Store.redo();
     UI.updateUndoButtons();
-    _afterEdit();
+    _afterEditFull();
     UI.showToast(`Redo: ${info.nextLabel}`);
   }
 
@@ -146,7 +161,7 @@ const App = (() => {
 
   function applyZoom(newZoom, pivotX, pivotY) {
     const { zoom, panX, panY } = Store.getState();
-    const clamped = Math.max(0.15, Math.min(6, newZoom));
+    const clamped = Math.max(0.05, Math.min(6, newZoom));
     Store.setState({
       zoom: clamped,
       panX: pivotX - (pivotX - panX) * (clamped / zoom),
@@ -172,6 +187,42 @@ const App = (() => {
     UI.updateZoomLabel();
     Renderer.draw();
     Input.refreshMinimap();
+  }
+
+  /**
+   * Startup-only camera: centre on the Printing Pod at a practical editing zoom.
+   *
+   * Formula:
+   *   zoom  = clamp(min(canvas_w, canvas_h) / REFERENCE_PX, MIN, MAX)
+   *   panX  = canvas_w / 2  −  podCentreCol * CELL_SIZE * zoom
+   *   panY  = canvas_h / 2  −  podCentreRow * CELL_SIZE * zoom
+   *
+   * REFERENCE_PX (540) is chosen so that on a ~960 px wide canvas the zoom
+   * lands at 1.0 — matching the old 40×30 fitView desktop experience (~45×40
+   * visible cells).  Narrower screens (mobile) scale down proportionally.
+   *
+   * fitView() is NOT called here and is NOT changed.
+   */
+  function startView() {
+    if (!_canvas) return;
+
+    // Pod centre in grid-cell coordinates (4×4 pod, top-left at POD_COL/POD_ROW)
+    const podCentreCol = POD_COL + 2;   // 148 + 2 = 150
+    const podCentreRow = POD_ROW + 2;   // 148 + 2 = 150
+
+    // Scale zoom so the shorter canvas axis shows ~540 px worth of grid
+    // at cell size 18.  That gives zoom ≈ 1.0 on a typical desktop canvas.
+    const REFERENCE_PX = 540;
+    const rawZoom = Math.min(_canvas.width, _canvas.height) / REFERENCE_PX;
+    const zoom    = Math.max(0.05, Math.min(6, rawZoom));
+
+    // Pan so the pod centre lands exactly at the canvas centre
+    const panX = _canvas.width  / 2 - podCentreCol * CELL_SIZE * zoom;
+    const panY = _canvas.height / 2 - podCentreRow * CELL_SIZE * zoom;
+
+    Store.setState({ zoom, panX, panY });
+    UI.updateZoomLabel();
+    Renderer.draw();
   }
 
   // ── 保存 ────────────────────────────────────────────────
@@ -334,20 +385,18 @@ const App = (() => {
     UI.updateStats();
     UI.updateUndoButtons();
 
-    const rooms = RoomDetector.detect();
-    Store.setState({ detectedRooms: rooms });
-    UI.updateRoomPanel(rooms);
+    _afterEditFull();
 
     Renderer.resize();
-    // 初期表示: グリッドが画面中央に収まるように
+    // 初期表示: 印刷ポッドを中心に実用的なズームで開始
     setTimeout(() => {
-      fitView();
+      startView();
       Input.refreshMinimap();
     }, 50);
   }
 
   document.addEventListener("DOMContentLoaded", init);
 
-  return { placeBuilding, eraseBuilding, applyZoom, fitView, performUndo, performRedo };
+  return { placeBuilding, eraseBuilding, applyZoom, fitView, performUndo, performRedo, runRoomDetection };
 
 })();

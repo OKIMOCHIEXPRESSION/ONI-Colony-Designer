@@ -54,6 +54,11 @@ const Input = (() => {
   let _minimapCtx     = null;
   let _minimapDragging = false;
 
+  // Same-cell guard for drag drawing
+  let _lastDrawCell  = null;   // "col,row" of the last cell processed during a stroke
+  // Multi-touch guard: true while 2+ fingers are active; blocks all drawing
+  let _gestureActive = false;
+
   // キャンバス参照
   let _canvas = null;
 
@@ -83,9 +88,10 @@ const Input = (() => {
     _pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, type: e.pointerType });
 
     // 2本指以上: ピンチ/パン開始
-    if (_pointers.size === 2) {
+    if (_pointers.size >= 2) {
       _cancelLongPress();
-      _commitDrawIfNeeded();
+      _abortDraw();           // roll back any in-progress stroke — never commit on multi-touch
+      _gestureActive = true;
       _startPinch();
       return;
     }
@@ -114,7 +120,7 @@ const Input = (() => {
     }, LONG_PRESS_MS);
 
     const { tool } = Store.getState();
-    if (tool === "place" || tool === "erase") {
+    if ((tool === "place" || tool === "erase") && !_gestureActive) {
       _startDraw(tool, px, py);
     }
   }
@@ -154,9 +160,13 @@ const Input = (() => {
     }
 
     // ─ 描画ドラッグ ─
-    if (_isDrawing) {
-      if (_drawOp === "place") App.placeBuilding(col, row);
-      else if (_drawOp === "erase") App.eraseBuilding(col, row);
+    if (_isDrawing && !_gestureActive) {
+      const cellKey = `${col},${row}`;
+      if (cellKey !== _lastDrawCell) {
+        _lastDrawCell = cellKey;
+        if (_drawOp === "place") App.placeBuilding(col, row);
+        else if (_drawOp === "erase") App.eraseBuilding(col, row);
+      }
       return;
     }
 
@@ -173,6 +183,11 @@ const Input = (() => {
 
     if (_pointers.size < 2) {
       _pinchStartDist = null; // ピンチ終了
+    }
+
+    // Clear gesture lock only when ALL fingers are lifted
+    if (_pointers.size === 0) {
+      _gestureActive = false;
     }
 
     if (_isPanning && _pointers.size === 0) {
@@ -193,8 +208,9 @@ const Input = (() => {
   function _onPointerCancel(e) {
     _cancelLongPress();
     _pointers.delete(e.pointerId);
-    if (_isDrawing) _commitDrawIfNeeded();
-    _isPanning = false;
+    if (_isDrawing) _abortDraw();   // system-cancelled touch: roll back, never commit
+    _isPanning     = false;
+    _gestureActive = false;
     _updateCursor();
   }
 
@@ -250,7 +266,7 @@ const Input = (() => {
     const dist    = Math.hypot(p1.x - p0.x, p1.y - p0.y);
     const mid     = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
     const scale   = dist / _pinchStartDist;
-    const newZoom = Math.max(0.15, Math.min(6, _pinchStartZoom * scale));
+    const newZoom = Math.max(0.05, Math.min(6, _pinchStartZoom * scale));
 
     // ピンチ中心を固定しながらズーム + ピンチ移動をパンに反映
     const panX = _pinchStartMid.x - (_pinchStartMid.x - _pinchStartPan.panX) * (newZoom / _pinchStartZoom) + (mid.x - _pinchStartMid.x);
@@ -265,22 +281,44 @@ const Input = (() => {
   // ── 描画ストローク ────────────────────────────────────────
 
   function _startDraw(op, px, py) {
-    _isDrawing = true;
-    _drawOp    = op;
+    _isDrawing    = true;
+    _drawOp       = op;
+    _lastDrawCell = null;   // reset same-cell guard for new stroke
     Store.beginStroke(Store.getState().activeLayer, op === "place" ? "配置" : "消去");
 
     const { col, row } = Renderer.toGrid(px, py);
+    _lastDrawCell = `${col},${row}`;
     if (op === "place") App.placeBuilding(col, row);
     else                App.eraseBuilding(col, row);
   }
 
   function _commitDrawIfNeeded() {
     if (!_isDrawing) return;
-    _isDrawing = false;
-    _drawOp    = null;
+    _isDrawing    = false;
+    _drawOp       = null;
+    _lastDrawCell = null;
     Store.commitStroke();
     UI.updateUndoButtons();
+    App.runRoomDetection();   // run full room detection once per stroke on pointerup
     _updateCursor();
+  }
+
+  /**
+   * Abort an in-progress draw stroke without committing to history.
+   * Used when a second finger lands (pinch/pan gesture starts) or
+   * when the pointer is cancelled by the system.
+   * Rolls back all cell changes made so far in this stroke.
+   */
+  function _abortDraw() {
+    if (!_isDrawing) return;
+    _isDrawing    = false;
+    _drawOp       = null;
+    _lastDrawCell = null;
+    Store.cancelStroke();   // reverses all pending cell changes, no history entry
+    _updateCursor();
+    // Redraw to show the rollback visually
+    Renderer.draw();
+    Input.refreshMinimap();
   }
 
   // ── コンテキストメニュー ──────────────────────────────────

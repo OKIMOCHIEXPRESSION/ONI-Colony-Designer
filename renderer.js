@@ -173,7 +173,9 @@ const Renderer = (() => {
           ctx.font         = `bold ${Math.min(s * 0.45, 12)}px sans-serif`;
           ctx.textAlign    = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText("製造ポッド", sc.x + bw / 2, sc.y + bh / 2);
+          const podLabel = (typeof I18n !== "undefined" && I18n.getLang() === "ja")
+            ? b.name_ja : b.name_en;
+          ctx.fillText(podLabel, sc.x + bw / 2, sc.y + bh / 2);
         }
         continue;
       }

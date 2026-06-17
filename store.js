@@ -162,6 +162,30 @@ const Store = (() => {
   }
 
   /**
+   * ストロークを中断してすべての変更を元に戻す。
+   * コマンド履歴には何も積まない。
+   * 2本指ジェスチャー開始時やpointercancel時に使う。
+   */
+  function cancelStroke() {
+    if (!_pendingDiffs) return;
+    // _pendingDiffs の after→before 方向でセルを巻き戻す
+    const layer = _pendingLayer;
+    for (const diff of _pendingDiffs) {
+      const targetLayer = diff.layer || layer;
+      const value = diff.before;   // restore original value
+      if (value === null || value === undefined) {
+        delete _state.layers[targetLayer][diff.key];
+      } else {
+        _state.layers[targetLayer][diff.key] = value;
+      }
+    }
+    _pendingDiffs   = null;
+    _pendingLayer   = null;
+    _pendingLabel   = "";
+    _pendingTouched = null;
+  }
+
+  /**
    * 単発操作（全消去・ロードなど）を直接コマンドとして記録する。
    * ストローク管理が不要な場合に使う。
    *
@@ -315,6 +339,7 @@ const Store = (() => {
     beginStroke,
     recordCellDiff,
     commitStroke,
+    cancelStroke,
     pushCommand,
     // Undo/Redo
     undo,

@@ -3,13 +3,13 @@
 // Generated from building_master.xlsx. Do not edit building rows by hand.
 // ============================================================
 
-const GRID_COLS = 40;
-const GRID_ROWS = 30;
+const GRID_COLS = 300;
+const GRID_ROWS = 300;
 const CELL_SIZE = 18;
 
 // Printing Pod storage cell. Placed buildings keep the existing top-left storage format.
-const POD_COL = 18;
-const POD_ROW = 13;
+const POD_COL = 148;
+const POD_ROW = 148;
 
 const LAYERS = {
   base:       { name_en: "Base",       name_ja: "基本",   color: "#a0a8b8", alpha: 1.0,  dimAlpha: 0.18 },
@@ -258,7 +258,7 @@ const BUILDINGS = {
     { id: "meteor_blaster", category: "Rocketry", name_en: "Meteor Blaster", name_ja: "気象レーザー（流星破壊機）", name: "気象レーザー（流星破壊機）", color: "#7D8BA8", icon: "meteor_blaster", w: 3, h: 5, rotation: "none", needsBase: true, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false, ports: { pipeIn: false, pipeOut: false, ventIn: false, ventOut: false, railIn: false, railOut: false, autoIn: true, autoOut: false } },
   ]},
   "Special": { layer: "base", items: [
-    { id: "printing_pod", category: "Special", name_en: "Printing Pod", name_ja: "ポッド（旅の始まりのポッド）", name: "ポッド（旅の始まりのポッド）", color: "#E05A2A", icon: "printing_pod", w: 4, h: 4, rotation: "none", needsBase: true, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false, ports: { pipeIn: false, pipeOut: false, ventIn: false, ventOut: false, railIn: false, railOut: false, autoIn: false, autoOut: false } },
+    { id: "printing_pod", category: "Special", name_en: "Printing Pod", name_ja: "製造ポッド", name: "製造ポッド", color: "#E05A2A", icon: "printing_pod", w: 4, h: 4, rotation: "none", needsBase: true, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false, ports: { pipeIn: false, pipeOut: false, ventIn: false, ventOut: false, railIn: false, railOut: false, autoIn: false, autoOut: false } },
     { id: "anti_entropy_nullifier", category: "Special", name_en: "Anti Entropy Nullifier", name_ja: "熱無効化装置 (AETN)", name: "熱無効化装置 (AETN)", color: "#E05A2A", icon: "anti_entropy_nullifier", w: 4, h: 4, rotation: "none", needsBase: true, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false, ports: { pipeIn: false, pipeOut: false, ventIn: false, ventOut: false, railIn: false, railOut: false, autoIn: false, autoOut: false } },
     { id: "neural_vacillator", category: "Special", name_en: "Neural Vacillator", name_ja: "神経シャッフル器", name: "神経シャッフル器", color: "#E05A2A", icon: "neural_vacillator", w: 3, h: 4, rotation: "none", needsBase: true, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false, ports: { pipeIn: false, pipeOut: false, ventIn: false, ventOut: false, railIn: false, railOut: false, autoIn: false, autoOut: false } },
     { id: "vending_machine", category: "Special", name_en: "Vending Machine", name_ja: "自動販売機", name: "自動販売機", color: "#E05A2A", icon: "vending_machine", w: 1, h: 2, rotation: "none", needsBase: true, origin: "bottom_right", power: 0, oxygen: 0, food: 0, water: 0, solid: false, ports: { pipeIn: false, pipeOut: false, ventIn: false, ventOut: false, railIn: false, railOut: false, autoIn: false, autoOut: false } },
