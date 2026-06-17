@@ -145,7 +145,7 @@ const Store = (() => {
   function commitStroke() {
     if (!_pendingDiffs || _pendingDiffs.length === 0) {
       _pendingDiffs = null;
-      return;
+      return false;
     }
     // diffs に layer を付与（_applyDiffs が diff 単体から layer を読むため）
     const layer = _pendingLayer;
@@ -159,6 +159,8 @@ const Store = (() => {
     _pendingLayer   = null;
     _pendingLabel   = "";
     _pendingTouched = null;
+
+    return true;
   }
 
   /**

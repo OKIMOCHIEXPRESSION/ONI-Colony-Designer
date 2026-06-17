@@ -128,6 +128,9 @@ const App = (() => {
         Store.pushCommand("ファイル読込", "multi", diffs);
         UI.updateUndoButtons();
         _afterEditFull();
+        
+        window.umami?.track("load");
+
         UI.showToast(I18n.t("toast.loaded"));
       } catch {
         UI.showToast(I18n.t("toast.load_error"));
@@ -234,6 +237,7 @@ const App = (() => {
     a.href     = URL.createObjectURL(blob);
     a.download = "oni-colony.json";
     a.click();
+    window.umami?.track("save");
     UI.showToast(I18n.t("toast.saved"));
   }
 
