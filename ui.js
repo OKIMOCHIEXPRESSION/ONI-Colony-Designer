@@ -1,11 +1,37 @@
 // ============================================================
-// ui.js — DOM 操作・イベントバインド・パネル更新
+// ui.js — DOM operations, event binding, panel updates
 //
-// 依存: data.js, store.js, renderer.js
+// Depends: i18n.js, data.js, store.js, renderer.js
+// Language: English-first via I18n.t(). Call I18n.applyDOM()
+//           plus _refreshDynamic() to switch at runtime.
 // ============================================================
 
 const UI = (() => {
 
+  // ── Building name helper ──────────────────────────────────
+  function _buildingName(b) {
+    return I18n.getLang() === "en"
+      ? (b.name_en || b.name_ja || b.id)
+      : (b.name_ja  || b.name_en || b.id);
+  }
+
+  // ── Layer name helper ─────────────────────────────────────
+  function _layerName(lk) {
+    const def = LAYERS[lk];
+    if (!def) return lk;
+    return I18n.getLang() === "en"
+      ? (def.name_en || def.name_ja || lk)
+      : (def.name_ja  || def.name_en || lk);
+  }
+
+  // ── Room type name helper ─────────────────────────────────
+  function _roomTypeName(type) {
+    return I18n.getLang() === "en"
+      ? (type.name_en || type.name_ja || type.id)
+      : (type.name_ja  || type.name_en || type.id);
+  }
+
+  // ── Icon abbreviation ─────────────────────────────────────
   function _iconLabel(b) {
     const words = (b.name_en || b.id || "")
       .split(/\s+|_/)
@@ -13,7 +39,49 @@ const UI = (() => {
     return words.slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
   }
 
-  // ── Undo/Redo ボタン状態更新 ─────────────────────────────────
+  // ── Language switch ───────────────────────────────────────
+  function setLang(lang) {
+    I18n.setLang(lang);       // persists to localStorage, calls applyDOM()
+    _refreshDynamic();        // rebuild JS-generated DOM
+  }
+
+  /**
+   * Refresh all JS-generated text that isn't covered by data-i18n attributes.
+   * Called after every language switch.
+   */
+  function _refreshDynamic() {
+    // Active layer label
+    const activeLayer = Store.getState().activeLayer;
+    const lbl = document.getElementById("active-layer-label");
+    if (lbl) lbl.textContent = I18n.t("infobar.editing") + _layerName(activeLayer);
+
+    // Building names in sidebar
+    document.querySelectorAll(".cat-label[data-cat]").forEach(el => {
+      el.textContent = el.getAttribute("data-cat");   // always EN category key
+    });
+    document.querySelectorAll(".building-btn").forEach(btn => {
+      const b = btn._buildingData;
+      if (!b) return;
+      const nameEl = btn.querySelector(".b-name");
+      if (nameEl) nameEl.textContent = _buildingName(b);
+    });
+
+    // Selected building label
+    const sel = Store.getState().selectedBuilding;
+    const selLbl = document.getElementById("selected-label");
+    if (selLbl && sel) {
+      selLbl.textContent = `${_buildingName(sel)} (${sel.w}×${sel.h})`;
+    }
+
+    // Building count suffix
+    _refreshCountLabel();
+
+    // Room panel (re-render with new strings)
+    const { detectedRooms } = Store.getState();
+    if (detectedRooms) updateRoomPanel(detectedRooms);
+  }
+
+  // ── Undo/Redo button state ────────────────────────────────
   function updateUndoButtons() {
     const canUndo = Store.canUndo();
     const canRedo = Store.canRedo();
@@ -27,41 +95,40 @@ const UI = (() => {
     });
   }
 
-  // ── トースト ──────────────────────────────────────────────
+  // ── Toast ─────────────────────────────────────────────────
   function showToast(msg) {
     const el = document.getElementById("toast");
-    el.textContent  = msg;
+    el.textContent   = msg;
     el.style.display = "block";
     setTimeout(() => { el.style.display = "none"; }, 2000);
   }
 
-  // ── ズーム ───────────────────────────────────────────────
+  // ── Zoom label ────────────────────────────────────────────
   function updateZoomLabel() {
     const { zoom } = Store.getState();
     document.getElementById("zoom-label").textContent = Math.round(zoom * 100) + "%";
   }
 
-  // ── ツール切り替え ────────────────────────────────────────
+  // ── Tool switch ───────────────────────────────────────────
   function setTool(t) {
     Store.setState({ tool: t });
-    // デスクトップ・スマホ両方のツールボタンを更新
     document.querySelectorAll(".tool-btn").forEach(x => x.classList.remove("active"));
     document.querySelectorAll(`#tool-${t}, #tool-${t}-m`).forEach(el => el.classList.add("active"));
-    // カーソルは input.js が管理
     if (typeof Input !== "undefined") Input.refreshCursor();
   }
 
-  // ── レイヤー切り替え ─────────────────────────────────────
+  // ── Layer switch ──────────────────────────────────────────
   function switchLayer(lk) {
     Store.setState({ activeLayer: lk });
     document.querySelectorAll(".layer-tab")
       .forEach(t => t.classList.toggle("active", t.dataset.layer === lk));
-    document.getElementById("active-layer-label").textContent = `編集中: ${LAYERS[lk].name}`;
+    const lbl = document.getElementById("active-layer-label");
+    if (lbl) lbl.textContent = I18n.t("infobar.editing") + _layerName(lk);
     buildSidebar(lk);
     Renderer.draw();
   }
 
-  // ── 右パネルタブ ─────────────────────────────────────────
+  // ── Right panel tab switch ────────────────────────────────
   function switchRightTab(tab) {
     document.getElementById("panel-stats").style.display = tab === "stats" ? "" : "none";
     document.getElementById("panel-rooms").style.display = tab === "rooms" ? "" : "none";
@@ -69,7 +136,15 @@ const UI = (() => {
     document.getElementById("tab-rooms").classList.toggle("active", tab === "rooms");
   }
 
-  // ── 統計パネル更新 ────────────────────────────────────────
+  // ── Building count label ──────────────────────────────────
+  function _refreshCountLabel() {
+    const el = document.getElementById("count-label");
+    if (!el) return;
+    const countText = el.getAttribute("data-count") || "0";
+    el.textContent = countText + I18n.t("infobar.buildings");
+  }
+
+  // ── Stats panel ───────────────────────────────────────────
   function updateStats() {
     let power = 0, gen = 0, oxygen = 0, food = 0, water = 0, total = 0;
 
@@ -96,9 +171,14 @@ const UI = (() => {
     balEl.textContent = (bal >= 0 ? "+" : "") + bal + " W";
     balEl.className   = "stat-val " + (bal >= 0 ? "stat-ok" : "stat-warn");
 
-    document.getElementById("count-label").textContent = total + "棟";
+    // Building count
+    const countEl = document.getElementById("count-label");
+    if (countEl) {
+      countEl.setAttribute("data-count", total);
+      countEl.textContent = total + I18n.t("infobar.buildings");
+    }
 
-    // レイヤータブのカウントバッジ
+    // Layer tab badges
     for (const lk of LAYER_ORDER) {
       const cnt = Object.values(Store.getLayerGrid(lk)).filter(b => !b.ref && !b.fixed).length;
       const el  = document.getElementById("cnt-" + lk);
@@ -106,12 +186,12 @@ const UI = (() => {
     }
   }
 
-  // ── 部屋パネル更新 ────────────────────────────────────────
+  // ── Rooms panel ───────────────────────────────────────────
   function updateRoomPanel(detectedRooms) {
     const list = document.getElementById("room-list");
 
-    if (detectedRooms.length === 0) {
-      list.innerHTML = `<div id="no-rooms">タイルで囲まれた<br>エリアを作ると<br>部屋を検出します</div>`;
+    if (!detectedRooms || detectedRooms.length === 0) {
+      list.innerHTML = `<div id="no-rooms" data-i18n-html="room.no_rooms">${I18n.t("room.no_rooms")}</div>`;
       return;
     }
 
@@ -126,13 +206,17 @@ const UI = (() => {
       const card = document.createElement("div");
       card.className = "room-card " + (valid.length > 0 ? "room-ok" : partial.length > 0 ? "room-warn" : "room-invalid");
 
+      const typeNames = valid.length > 0
+        ? valid.map(c => _roomTypeName(c.type)).join(" / ")
+        : I18n.t("room.unknown");
+
       let html = `<div class="room-card-header">
-        <span class="room-type-name">${valid.length > 0 ? valid.map(c => c.type.name).join(" / ") : "未判定の空間"}</span>
-        <span class="room-size">${room.size}マス</span>
+        <span class="room-type-name">${typeNames}</span>
+        <span class="room-size">${room.size}${I18n.t("room.tiles")}</span>
       </div>`;
 
       if (valid.length > 0) {
-        html += `<div class="room-status room-ok">✓ 有効な部屋</div>`;
+        html += `<div class="room-status room-ok">${I18n.t("room.valid")}</div>`;
       } else if (partial.length > 0) {
         html += `<div class="room-detail">${partial[0].reason}</div>`;
       }
@@ -157,11 +241,11 @@ const UI = (() => {
     });
   }
 
-  // ── サイドバー構築 ────────────────────────────────────────
+  // ── Sidebar build ─────────────────────────────────────────
   function buildSidebar(filterLayer) {
-    const catEl     = document.getElementById("categories");
-    const catElM    = document.getElementById("categories-m"); // スマホ用
-    const legendEl  = document.getElementById("legend-items");
+    const catEl    = document.getElementById("categories");
+    const catElM   = document.getElementById("categories-m");
+    const legendEl = document.getElementById("legend-items");
     catEl.innerHTML    = "";
     if (catElM) catElM.innerHTML = "";
     legendEl.innerHTML = "";
@@ -169,8 +253,10 @@ const UI = (() => {
     for (const [cat, def] of Object.entries(BUILDINGS)) {
       if (filterLayer !== "all" && def.layer !== filterLayer) continue;
 
+      // Category label — always the English category key (same as used in data.js)
       const label = document.createElement("div");
-      label.className   = "cat-label";
+      label.className = "cat-label";
+      label.setAttribute("data-cat", cat);
       label.textContent = cat;
       catEl.appendChild(label);
 
@@ -180,7 +266,7 @@ const UI = (() => {
         const lc = LAYERS[def.layer].color;
         btn.innerHTML = [
           `<span class="b-icon" title="${b.icon}" style="background:${b.color}22;color:${b.color}">${_iconLabel(b)}</span>`,
-          `<span>${b.name}</span>`,
+          `<span class="b-name">${_buildingName(b)}</span>`,
           `<span class="b-layer-dot" style="background:${lc}"></span>`,
           `<span class="b-size">${b.w}×${b.h}</span>`,
         ].join("");
@@ -192,7 +278,7 @@ const UI = (() => {
           Store.setState({ selectedBuilding: { ...b, layer: def.layer } });
           switchLayer(def.layer);
           const lbl = document.getElementById("selected-label");
-          if (lbl) lbl.textContent = `${b.name} (${b.w}×${b.h})`;
+          if (lbl) lbl.textContent = `${_buildingName(b)} (${b.w}×${b.h})`;
           setTool("place");
         });
 
@@ -204,13 +290,33 @@ const UI = (() => {
       li.innerHTML = `<div class="legend-dot" style="background:${CAT_COLORS[cat] || '#666'}"></div><span>${cat}</span>`;
       legendEl.appendChild(li);
     }
+
+    // Mirror to mobile drawer
+    if (catElM) catElM.innerHTML = catEl.innerHTML;
+
+    // Re-attach mobile button events (since we cloned HTML)
+    if (catElM) {
+      catElM.querySelectorAll(".building-btn").forEach((btn, i) => {
+        const src = catEl.querySelectorAll(".building-btn")[i];
+        if (!src) return;
+        btn._buildingData = src._buildingData;
+        btn.addEventListener("click", () => {
+          if (src._buildingData) src.click();
+          document.getElementById("palette-drawer")?.classList.remove("open");
+          document.getElementById("palette-toggle")?.classList.remove("active");
+        });
+      });
+    }
   }
 
-  // ── 検索フィルター ────────────────────────────────────────
+  // ── Search filter ─────────────────────────────────────────
   function filterSidebar(query) {
     const q = query.toLowerCase();
     document.querySelectorAll(".building-btn").forEach(btn => {
-      btn.style.display = btn.textContent.toLowerCase().includes(q) ? "" : "none";
+      const b = btn._buildingData;
+      const nameEN = (b?.name_en || "").toLowerCase();
+      const nameJA = (b?.name_ja || "").toLowerCase();
+      btn.style.display = (nameEN.includes(q) || nameJA.includes(q)) ? "" : "none";
     });
     document.querySelectorAll(".cat-label").forEach(label => {
       let el = label.nextElementSibling, any = false;
@@ -222,7 +328,7 @@ const UI = (() => {
     });
   }
 
-  // ── コンテキストメニュー ──────────────────────────────────
+  // ── Context menu ──────────────────────────────────────────
   function showContextMenu(x, y, col, row, layerKey) {
     Store.setState({ rightClick: { col, row, layer: layerKey } });
     const menu = document.getElementById("context-menu");
@@ -235,8 +341,23 @@ const UI = (() => {
     document.getElementById("context-menu").style.display = "none";
   }
 
-  // ── 公開API ──────────────────────────────────────────────
-  return { updateUndoButtons,
+  // ── Language button bootstrap ─────────────────────────────
+  // Runs immediately when the module is evaluated (after DOM ready via app.js).
+  (() => {
+    const langBtn = document.getElementById("btn-lang");
+    if (langBtn) {
+      // Apply initial language (English by default, from I18n)
+      I18n.applyDOM();
+      langBtn.addEventListener("click", () => {
+        const next = I18n.getLang() === "en" ? "ja" : "en";
+        setLang(next);
+      });
+    }
+  })();
+
+  // ── Public API ────────────────────────────────────────────
+  return {
+    updateUndoButtons,
     showToast,
     updateZoomLabel,
     setTool,

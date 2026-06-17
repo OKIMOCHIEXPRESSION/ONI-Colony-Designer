@@ -1,106 +1,205 @@
 # ONI Colony Designer
 
-A colony planning and layout design tool for **Oxygen Not Included**.
+A browser-based colony planning tool for **Oxygen Not Included**.
 
-This application allows players to design colony layouts, place buildings, and plan infrastructure directly in the browser before building in-game.
+Design colony layouts, test building placement, and plan large-scale projects before committing resources in-game.
 
-## Current Status
+---
 
-### Building Database
+## Why This Exists
 
-* 216 buildings implemented
-* Base Game coverage
-* English (`name_en`) and Japanese (`name_ja`) localization support
-* Category classification support
-* Building dimensions (width / height)
-* Building placement origin support (`origin: "bottom_right"`)
+Many ONI players currently plan their colonies using:
 
-### Placement System
+* Screenshots
+* Spreadsheets
+* Drawing tools
+* Sandbox saves
 
-* Grid-based placement
-* Building selection
+ONI Colony Designer provides a dedicated planning environment built specifically for Oxygen Not Included.
+
+The goal is to make colony planning faster, easier, and more accurate.
+
+---
+
+## Features
+
+### Building Placement
+
+* Place buildings on a tile grid
 * Multi-tile building support
-* Bottom-right anchor placement
+* Accurate building dimensions
+* Building categories
+* Building search and filtering
+
+### Colony Planning
+
+* Layout planning
+* Industrial block planning
+* Power plant planning
+* Rocket infrastructure planning
+* Base expansion planning
+
+### Save & Load
+
+* Save colony layouts
+* Load existing plans
+* Undo support
 * Backward-compatible save format
 
-### Layers
+### Localization
+
+* English-first interface
+* Japanese language support
+* Building name localization
+* Category localization
+* UI localization
+
+---
+
+## Building Database
+
+Current database:
+
+* 216 Vanilla ONI buildings
+* Cargo-derived source data
+* Verified dimensions
+* Verified placement sizes
+* English and Japanese naming support
+
+### Examples of Corrected Building Sizes
+
+Several dimensions were corrected during migration:
+
+| Building            | Previous | Correct                |
+| ------------------- | -------- | ---------------------- |
+| Liquid Reservoir    | 3×3      | 2×3                    |
+| Transit Tube Access | 2×3      | 3×2                    |
+| Wood Burner         | 2×3      | 2×2                    |
+| Printing Pod        | 4×4      | 4×4 (special handling) |
+
+---
+
+## Current MVP Scope
 
 Implemented:
+
+* Building placement
+* Save / Load
+* Undo
+* Layer system
+* English / Japanese UI
+* Vanilla building database
+
+Not yet implemented:
+
+* Building icons
+* Port visualization
+* Pipe overlays
+* Automation overlays
+* DLC buildings
+* Full room rule parity
+
+---
+
+## Layers
+
+Currently available:
 
 * Building Layer
 * Power Layer
 * Gas Layer
 * Liquid Layer
-* Room Layer
+* Room Layer (experimental)
 
-### Building Data Structure
+---
 
-Buildings are defined using the following structure:
+## Known Limitations
 
-```javascript
-{
-  id: "electrolyzer",
-  category: "Oxygen",
-  name_en: "Electrolyzer",
-  name_ja: "電解装置",
-  width: 2,
-  height: 2,
-  origin: "bottom_right",
-  icon: "electrolyzer"
-}
-```
+This project is currently in MVP stage.
 
-## Data Source
+### Room Recognition
 
-`building_master.xlsx` is the single source of truth for all building definitions.
+Room detection is currently experimental.
 
-Imported fields:
+Most common rooms can be detected, but room rules may not perfectly match in-game behavior.
 
-* Category
-* English Name
-* Japanese Name
-* Width
-* Height
+Full room parity is planned after MVP release.
+
+### Building Graphics
+
+Icons are not yet implemented.
+
+Buildings are currently represented by simplified outlines to prioritize planning functionality.
+
+### DLC Content
+
+The current public version focuses on the Vanilla game.
+
+DLC support is planned for a future release.
+
+---
 
 ## Roadmap
 
-### High Priority
+### Near-Term
 
-* Building placement rule validation
-* Special building constraint validation
-* Construction rule checking
+* Community feedback integration
+* Additional validation rules
+* Improved mobile usability
+* More accurate room recognition
 
-Examples:
+### Mid-Term
 
-* Steam Turbine
-* Bunker Door
-* Travel Tube
-* Monument
+* Port database integration
+* Pipe visualization
+* Gas visualization
+* Automation visualization
 
-### Medium Priority
+### Long-Term
 
-* Port database
-* Liquid connection visualization
-* Gas connection visualization
-* Power connection visualization
-* Automation connection visualization
+* DLC support
+* Templates
+* Blueprint sharing
+* Advanced planning tools
 
-### Low Priority
+---
 
-* Building icon implementation
-* UI improvements
-* Additional templates
+## Design Principles
 
-## Development Principles
+### Accuracy First
 
-* `building_master.xlsx` is the authoritative source
-* English names are used as the internal reference
-* Japanese localization is supported through language switching
-* Save-file backward compatibility must be preserved
-* In-game Oxygen Not Included behavior takes precedence over convenience
+Building dimensions should match actual ONI behavior whenever possible.
 
-## License
+### English First
 
-This project is a fan-made planning tool for Oxygen Not Included.
+English is the primary language used internally.
+
+Japanese localization is provided through the translation system.
+
+### Save Compatibility
+
+Existing save files should continue working whenever possible.
+
+### Practical Planning Tool
+
+The goal is not to recreate ONI.
+
+The goal is to help players design colonies efficiently.
+
+---
+
+## Feedback
+
+Feedback, bug reports, and feature requests are welcome.
+
+Please open an Issue or start a Discussion.
+
+---
+
+## Disclaimer
+
+ONI Colony Designer is a fan-made project.
 
 Oxygen Not Included is © Klei Entertainment.
+
+This project is not affiliated with or endorsed by Klei Entertainment.

@@ -112,12 +112,16 @@ const RoomDetector = (() => {
       // ── サイズ違反 ──
       if (size < rt.minTiles) {
         results.push({ type: rt, status: "size_small",
-          reason: `部屋が小さすぎます (${size} / ${rt.minTiles}マス以上必要)` });
+          reason: (typeof I18n !== "undefined" && I18n.getLang() === "ja")
+              ? `部屋が小さすぎます (${size} / ${rt.minTiles}マス以上必要)`
+              : `Too small (${size} / min ${rt.minTiles} tiles)` });
         continue;
       }
       if (size > rt.maxTiles) {
         results.push({ type: rt, status: "size_large",
-          reason: `部屋が大きすぎます (${size} / ${rt.maxTiles}マス以下必要)` });
+          reason: (typeof I18n !== "undefined" && I18n.getLang() === "ja")
+              ? `部屋が大きすぎます (${size} / ${rt.maxTiles}マス以下必要)`
+              : `Too large (${size} / max ${rt.maxTiles} tiles)` });
         continue;
       }
 
@@ -130,16 +134,20 @@ const RoomDetector = (() => {
         const hasRequired = rt.required.some(id => buildingIds.has(id));
         if (!hasRequired) {
           const names = rt.required
-            .map(id => BUILDING_MAP[id]?.name || id)
+            .map(id => BUILDING_MAP[id]?.name_en || BUILDING_MAP[id]?.name_ja || id)
             .join(" or ");
           results.push({ type: rt, status: "missing_required",
-            reason: `必須: ${names}` });
+            reason: (typeof I18n !== "undefined" && I18n.getLang() === "ja")
+              ? `必須: ${names}`
+              : `Requires: ${names}` });
           continue;
         }
       }
 
       results.push({ type: rt, status: "valid",
-        reason: "✓ 条件を満たしています" });
+        reason: (typeof I18n !== "undefined" && I18n.getLang() === "ja")
+              ? "✓ 条件を満たしています"
+              : "✓ Requirements met" });
     }
 
     return results;

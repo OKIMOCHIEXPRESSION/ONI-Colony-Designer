@@ -112,8 +112,13 @@ const Renderer = (() => {
       if (isHighlighted) {
         const validTypes = room.classifications.filter(c => c.status === "valid");
         const label = validTypes.length > 0
-          ? validTypes.map(c => c.type.name).join(" / ")
-          : `${room.size}マス`;
+          ? validTypes.map(c => {
+            const t = c.type;
+            return (typeof I18n !== 'undefined')
+              ? (I18n.getLang() === 'en' ? (t.name_en || t.name_ja || t.id) : (t.name_ja || t.name_en || t.id))
+              : (t.name_en || t.name_ja || t.id);
+          }).join(" / ")
+          : `${room.size} tiles`;
 
         const minC = Math.min(...room.cells.map(([c]) => c));
         const maxC = Math.max(...room.cells.map(([c]) => c));
@@ -200,7 +205,7 @@ const Renderer = (() => {
         ctx.font         = `${Math.max(7, s * 0.26)}px sans-serif`;
         ctx.textAlign    = "center";
         ctx.textBaseline = "bottom";
-        ctx.fillText(b.name, sc.x + bw / 2, sc.y + bh - 2);
+        ctx.fillText(b.name_en || b.name_ja || b.id, sc.x + bw / 2, sc.y + bh - 2);
       }
     }
 

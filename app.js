@@ -43,7 +43,7 @@ const App = (() => {
     const key    = `${col},${row}`;
     const b      = grid[key];
     if (!b) return;
-    if (b.fixed) { UI.showToast("製造ポッドは削除できません"); return; }
+    if (b.fixed) { UI.showToast(I18n.t("toast.pod_locked")); return; }
 
     const refKey = b.ref || key;
     const main   = grid[refKey];
@@ -113,9 +113,9 @@ const App = (() => {
         Store.pushCommand("ファイル読込", "multi", diffs);
         UI.updateUndoButtons();
         _afterEdit();
-        UI.showToast("読み込みました");
+        UI.showToast(I18n.t("toast.loaded"));
       } catch {
-        UI.showToast("読み込みエラー");
+        UI.showToast(I18n.t("toast.load_error"));
       }
     };
     reader.readAsText(file);
@@ -183,7 +183,7 @@ const App = (() => {
     a.href     = URL.createObjectURL(blob);
     a.download = "oni-colony.json";
     a.click();
-    UI.showToast("保存しました");
+    UI.showToast(I18n.t("toast.saved"));
   }
 
   // ── UI イベント ──────────────────────────────────────────
@@ -199,7 +199,7 @@ const App = (() => {
 
     // 全消去
     document.getElementById("btn-clear").addEventListener("click", () => {
-      if (!confirm("現在のレイヤーの建物を全て削除しますか？")) return;
+      if (!confirm(I18n.t("confirm.clear"))) return;
       clearActiveLayerWithHistory();
     });
 
@@ -272,7 +272,7 @@ const App = (() => {
       if (!b) return;
       const main = b.ref ? grid[b.ref] : b;
       Store.setState({ clipboard: main });
-      UI.showToast("コピー: " + main.name);
+      UI.showToast(I18n.t("toast.copied") + (I18n.getLang() === "en" ? (main.name_en || main.name_ja || main.id) : (main.name_ja || main.name_en || main.id)));
     });
 
     // スマホ: ボトムバーのツールボタン
