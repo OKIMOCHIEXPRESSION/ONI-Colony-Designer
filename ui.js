@@ -8,6 +8,8 @@
 
 const UI = (() => {
 
+  const collapsedBuildingGroups = new Set();
+
   // ── Building name helper ──────────────────────────────────
   function _buildingName(b) {
     return I18n.getLang() === "en"
@@ -260,7 +262,7 @@ const UI = (() => {
       label.textContent = cat;
       catEl.appendChild(label);
 
-      for (const b of def.items) {
+      function createBuildingButton(b) {
         const btn = document.createElement("button");
         btn.className = "building-btn";
         const lc = LAYERS[def.layer].color;
@@ -282,7 +284,52 @@ const UI = (() => {
           setTool("place");
         });
 
-        catEl.appendChild(btn);
+        return btn;
+      }
+
+      const groupedItems = new Map();
+      for (const b of def.items) {
+        if (!b.group) continue;
+        if (!groupedItems.has(b.group)) groupedItems.set(b.group, []);
+        groupedItems.get(b.group).push(b);
+      }
+
+      if (groupedItems.size === 0) {
+        for (const b of def.items) catEl.appendChild(createBuildingButton(b));
+      } else {
+        // Keep ungrouped definitions usable in a partially grouped category.
+        for (const b of def.items) {
+          if (!b.group) catEl.appendChild(createBuildingButton(b));
+        }
+
+        for (const [groupName, items] of groupedItems) {
+          const groupKey = JSON.stringify([cat, groupName]);
+          const group = document.createElement("div");
+          group.className = "building-group";
+          group.dataset.groupKey = groupKey;
+
+          const header = document.createElement("button");
+          header.type = "button";
+          header.className = "building-group-header";
+          header.dataset.groupKey = groupKey;
+          header.setAttribute("aria-expanded", "true");
+
+          const chevron = document.createElement("span");
+          chevron.className = "building-group-chevron";
+          chevron.setAttribute("aria-hidden", "true");
+          const title = document.createElement("span");
+          title.className = "building-group-title";
+          title.textContent = groupName;
+          header.append(chevron, title);
+
+          const contents = document.createElement("div");
+          contents.className = "building-group-items";
+          for (const b of items) contents.appendChild(createBuildingButton(b));
+
+          header.addEventListener("click", () => toggleBuildingGroup(groupKey));
+          group.append(header, contents);
+          catEl.appendChild(group);
+        }
       }
 
       const li = document.createElement("div");
@@ -294,7 +341,7 @@ const UI = (() => {
     // Mirror to mobile drawer
     if (catElM) catElM.innerHTML = catEl.innerHTML;
 
-    // Re-attach mobile button events (since we cloned HTML)
+    // Re-attach mobile events (since we cloned HTML)
     if (catElM) {
       catElM.querySelectorAll(".building-btn").forEach((btn, i) => {
         const src = catEl.querySelectorAll(".building-btn")[i];
@@ -306,22 +353,49 @@ const UI = (() => {
           document.getElementById("palette-toggle")?.classList.remove("active");
         });
       });
+      catElM.querySelectorAll(".building-group-header").forEach(header => {
+        header.addEventListener("click", () => toggleBuildingGroup(header.dataset.groupKey));
+      });
     }
+
+    syncBuildingGroups();
+  }
+
+  function toggleBuildingGroup(groupKey) {
+    if (collapsedBuildingGroups.has(groupKey)) collapsedBuildingGroups.delete(groupKey);
+    else collapsedBuildingGroups.add(groupKey);
+    syncBuildingGroups();
+  }
+
+  function syncBuildingGroups() {
+    document.querySelectorAll(".building-group").forEach(group => {
+      const collapsed = collapsedBuildingGroups.has(group.dataset.groupKey);
+      group.classList.toggle("collapsed", collapsed);
+      const header = group.querySelector(":scope > .building-group-header");
+      if (header) header.setAttribute("aria-expanded", String(!collapsed));
+    });
   }
 
   // ── Search filter ─────────────────────────────────────────
   function filterSidebar(query) {
-    const q = query.toLowerCase();
+    const q = query.trim().toLowerCase();
     document.querySelectorAll(".building-btn").forEach(btn => {
       const b = btn._buildingData;
       const nameEN = (b?.name_en || "").toLowerCase();
       const nameJA = (b?.name_ja || "").toLowerCase();
       btn.style.display = (nameEN.includes(q) || nameJA.includes(q)) ? "" : "none";
     });
+    document.querySelectorAll(".building-group").forEach(group => {
+      const any = Array.from(group.querySelectorAll(".building-btn"))
+        .some(btn => btn.style.display !== "none");
+      group.style.display = any ? "" : "none";
+      group.classList.toggle("search-match", Boolean(q) && any);
+    });
     document.querySelectorAll(".cat-label").forEach(label => {
       let el = label.nextElementSibling, any = false;
-      while (el && el.classList.contains("building-btn")) {
-        if (el.style.display !== "none") any = true;
+      while (el && !el.classList.contains("cat-label")) {
+        if (el.classList.contains("building-btn") && el.style.display !== "none") any = true;
+        if (el.classList.contains("building-group") && el.style.display !== "none") any = true;
         el = el.nextElementSibling;
       }
       label.style.display = any ? "" : "none";
