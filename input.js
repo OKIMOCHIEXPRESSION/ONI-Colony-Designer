@@ -147,12 +147,27 @@ const Input = (() => {
 
   function _onPointerMove(e) {
     e.preventDefault();
-    if (!_pointers.has(e.pointerId)) return;
-    _pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, type: e.pointerType });
 
     const rect = _canvas.getBoundingClientRect();
     const px   = e.clientX - rect.left;
     const py   = e.clientY - rect.top;
+
+    // ─ カーソル位置の追跡は常に行う（ボタン非押下時のホバーでも）。
+    //   従来は次の「登録済みポインタのみ」ガードより後段にあり、ボタンを
+    //   押していない間は lastMouse が更新されず、ホバー系プレビュー（配置
+    //   ゴースト・ペーストゴースト）が追従しなかった。ここを最初に出すことで
+    //   既存の登録済みポインタ専用ロジック（パン・ピンチ・選択ドラッグ・
+    //   描画ストローク）の挙動は一切変えずに解消する。
+    Store.setState({ lastMouse: { x: px, y: py } });
+    const { col, row } = Renderer.toGrid(px, py);
+    const posEl = document.getElementById("pos-label");
+    if (posEl) posEl.textContent = `(${col}, ${row})`;
+
+    if (!_pointers.has(e.pointerId)) {
+      Renderer.draw();   // ホバーでもプレビューを再描画して追従させる
+      return;
+    }
+    _pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, type: e.pointerType });
 
     // ─ 長押しキャンセル判定 ─
     if (_longPressOrigin) {
@@ -166,12 +181,6 @@ const Input = (() => {
       _updatePinch();
       return;
     }
-
-    // ─ マウスカーソル更新 ─
-    Store.setState({ lastMouse: { x: px, y: py } });
-    const { col, row } = Renderer.toGrid(px, py);
-    const posEl = document.getElementById("pos-label");
-    if (posEl) posEl.textContent = `(${col}, ${row})`;
 
     // ─ 矩形選択ドラッグ更新（Copy Tool） ─
     const { selection } = Store.getState();
