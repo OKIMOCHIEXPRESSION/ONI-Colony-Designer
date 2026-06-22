@@ -116,7 +116,23 @@ const UI = (() => {
     Store.setState({ tool: t });
     document.querySelectorAll(".tool-btn").forEach(x => x.classList.remove("active"));
     document.querySelectorAll(`#tool-${t}, #tool-${t}-m`).forEach(el => el.classList.add("active"));
+
+    // Switching tools always cancels an in-progress rectangle selection.
+    const { selection, areaClipboard } = Store.getState();
+    if (selection.active) Store.setState({ selection: { ...selection, active: false } });
+
+    if (t === "copy") {
+      // Re-entering Copy Tool reactivates paste mode if a clipboard already
+      // exists (spec v1.4 "Re-entering Paste Mode"), so the user can paste
+      // again without redrawing a selection. No clipboard yet → leave paste
+      // mode off; the next drag on the canvas will start a fresh selection.
+      Store.setState({ pasteMode: Boolean(areaClipboard) });
+    } else {
+      Store.setState({ pasteMode: false });
+    }
+
     if (typeof Input !== "undefined") Input.refreshCursor();
+    if (typeof Renderer !== "undefined") Renderer.draw();
   }
 
   // ── Layer switch ──────────────────────────────────────────

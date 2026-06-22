@@ -59,6 +59,10 @@ const Input = (() => {
   // Multi-touch guard: true while 2+ fingers are active; blocks all drawing
   let _gestureActive = false;
 
+  // Paste-mode tap tracking (Task-UX-001): origin point of a potential
+  // single-tap paste commit, cleared once resolved (committed or treated as drag)
+  let _pasteTapOrigin = null;
+
   // キャンバス参照
   let _canvas = null;
 
@@ -91,6 +95,8 @@ const Input = (() => {
     if (_pointers.size >= 2) {
       _cancelLongPress();
       _abortDraw();           // roll back any in-progress stroke — never commit on multi-touch
+      _cancelSelection();      // a second finger landing cancels an in-progress rectangle selection
+      _pasteTapOrigin = null;  // and cancels a pending paste-tap, without committing it
       _gestureActive = true;
       _startPinch();
       return;
@@ -112,6 +118,21 @@ const Input = (() => {
       return;
     }
 
+    const { tool, pasteMode } = Store.getState();
+
+    // Copy Tool: 矩形選択の追跡を常に開始する（仕様の Selection Workflow に
+    // 従い pointerdown は常に矩形を開始する）。ペーストモードが同時に有効な
+    // 場合は、タップ判定用の起点も記録する。pointerup 時に実際の移動距離で
+    // 「タップ＝既存クリップボードをペースト」か「ドラッグ＝新規選択でコピー」
+    // かを決定する（仕様 v1.4: クリップボード再利用とのコンフリクトを解消）。
+    if (tool === "copy" && !_gestureActive) {
+      const { col, row } = Renderer.toGrid(px, py);
+      Store.setState({ selection: { active: true, startCol: col, startRow: row, endCol: col, endRow: row } });
+      if (pasteMode) _pasteTapOrigin = { x: px, y: py };
+      Renderer.draw();
+      return;
+    }
+
     // 左ボタン / タッチ: 長押し計測開始 & 描画開始準備
     _longPressOrigin = { x: px, y: py };
     _longPressTimer  = setTimeout(() => {
@@ -119,7 +140,6 @@ const Input = (() => {
       _triggerContextMenu(px, py);
     }, LONG_PRESS_MS);
 
-    const { tool } = Store.getState();
     if ((tool === "place" || tool === "erase") && !_gestureActive) {
       _startDraw(tool, px, py);
     }
@@ -152,6 +172,14 @@ const Input = (() => {
     const { col, row } = Renderer.toGrid(px, py);
     const posEl = document.getElementById("pos-label");
     if (posEl) posEl.textContent = `(${col}, ${row})`;
+
+    // ─ 矩形選択ドラッグ更新（Copy Tool） ─
+    const { selection } = Store.getState();
+    if (selection.active) {
+      Store.setState({ selection: { ...selection, endCol: col, endRow: row } });
+      Renderer.draw();
+      return;
+    }
 
     // ─ パン ─
     if (_isPanning) {
@@ -190,6 +218,36 @@ const Input = (() => {
       _gestureActive = false;
     }
 
+    // ─ Copy Tool の確定: タップ(既存クリップボードをペースト) か
+    //   ドラッグ(新規矩形を確定してコピー) かを移動距離で判定する ─
+    const { selection, pasteMode } = Store.getState();
+    if (selection.active && _pointers.size === 0) {
+      let committedPaste = false;
+
+      if (pasteMode && _pasteTapOrigin) {
+        const dx    = px - _pasteTapOrigin.x;
+        const dy    = py - _pasteTapOrigin.y;
+        const isTap = Math.hypot(dx, dy) <= LONG_PRESS_PX;
+        if (isTap) {
+          Store.setState({ selection: { ...selection, active: false } });
+          const { col, row } = Renderer.toGrid(px, py);
+          App.pasteAreaClipboard(col, row);
+          committedPaste = true;
+        }
+      }
+      _pasteTapOrigin = null;
+
+      if (!committedPaste) {
+        const minCol = Math.min(selection.startCol, selection.endCol);
+        const maxCol = Math.max(selection.startCol, selection.endCol);
+        const minRow = Math.min(selection.startRow, selection.endRow);
+        const maxRow = Math.max(selection.startRow, selection.endRow);
+        Store.setState({ selection: { ...selection, active: false } });
+        App.copySelection(minCol, minRow, maxCol, maxRow);
+      }
+      return;
+    }
+
     if (_isPanning && _pointers.size === 0) {
       _isPanning = false;
       _panStart  = null;
@@ -209,9 +267,19 @@ const Input = (() => {
     _cancelLongPress();
     _pointers.delete(e.pointerId);
     if (_isDrawing) _abortDraw();   // system-cancelled touch: roll back, never commit
+    _cancelSelection();
+    _pasteTapOrigin = null;
     _isPanning     = false;
     _gestureActive = false;
     _updateCursor();
+  }
+
+  /** Cancel an in-progress rectangle selection without generating a clipboard. */
+  function _cancelSelection() {
+    const { selection } = Store.getState();
+    if (selection.active) {
+      Store.setState({ selection: { ...selection, active: false } });
+    }
   }
 
   // ── パン ─────────────────────────────────────────────────
@@ -402,6 +470,7 @@ const Input = (() => {
     // ツール
     if (e.key === "p" || e.key === "P") { UI.setTool("place"); return; }
     if (e.key === "e" || e.key === "E") { UI.setTool("erase"); return; }
+    if ((e.key === "c" || e.key === "C") && !e.ctrlKey) { UI.setTool("copy"); return; }
 
     // F: 全体表示
     if (e.key === "f" || e.key === "F") { App.fitView(); return; }
@@ -412,6 +481,9 @@ const Input = (() => {
       const lbl = document.getElementById("selected-label");
       if (lbl) lbl.textContent = "建物を選択してください";
       document.querySelectorAll(".building-btn").forEach(x => x.classList.remove("selected"));
+      _cancelSelection();
+      _pasteTapOrigin = null;
+      App.exitPasteMode();
       return;
     }
 

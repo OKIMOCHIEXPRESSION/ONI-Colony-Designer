@@ -10,6 +10,31 @@ const App = (() => {
 
   // ── 配置 ────────────────────────────────────────────────
 
+  // ── 配置フットプリント計算（共有ヘルパー） ──────────────
+  //
+  // 1建物分のセル配置を計算する。実際の Store 書き込み・履歴記録は
+  // 呼び出し側が行う（単発配置 / バッチペーストで異なる記録方法が必要なため）。
+  //
+  // 戻り値: [{ key, after }, ...]  ※ after は新規セル値（メイン or ref）
+  function _footprintCells(left, top, buildingDef) {
+    const b   = { ...buildingDef, origin: "bottom_right" };
+    const ref = `${left},${top}`;
+    const cells = [];
+    for (let dc = 0; dc < b.w; dc++) {
+      for (let dr = 0; dr < b.h; dr++) {
+        const key   = `${left + dc},${top + dr}`;
+        const after = (dc === 0 && dr === 0) ? b : { ...b, ref };
+        cells.push({ key, after });
+      }
+    }
+    return cells;
+  }
+
+  /** 矩形が範囲内に収まるか（左上座標 + 寸法） */
+  function _footprintInBounds(left, top, w, h) {
+    return left >= 0 && top >= 0 && left + w <= GRID_COLS && top + h <= GRID_ROWS;
+  }
+
   function placeBuilding(col, row) {
     const { selectedBuilding, activeLayer } = Store.getState();
     if (!selectedBuilding) return;
@@ -17,22 +42,13 @@ const App = (() => {
     const top  = row - selectedBuilding.h + 1;
     if (left < 0 || top < 0 || col >= GRID_COLS || row >= GRID_ROWS) return;
 
-    const grid = Store.getLayerGrid(activeLayer);
-    const b    = { ...selectedBuilding, origin: "bottom_right" };
-    const ref  = `${left},${top}`;
+    const grid  = Store.getLayerGrid(activeLayer);
+    const cells = _footprintCells(left, top, selectedBuilding);
 
-    for (let dc = 0; dc < b.w; dc++) {
-      for (let dr = 0; dr < b.h; dr++) {
-        const cellCol = left + dc;
-        const cellRow = top + dr;
-        const key    = `${cellCol},${cellRow}`;
-        const before = grid[key] ?? null;
-        const after  = (dc === 0 && dr === 0)
-          ? b
-          : { ...b, ref };
-        Store.recordCellDiff(key, before, after);
-        Store.setCell(activeLayer, key, after);
-      }
+    for (const { key, after } of cells) {
+      const before = grid[key] ?? null;
+      Store.recordCellDiff(key, before, after);
+      Store.setCell(activeLayer, key, after);
     }
     _afterEditDraw();
   }
@@ -66,6 +82,128 @@ const App = (() => {
     UI.updateStats();
     Renderer.draw();
     Input.refreshMinimap();
+  }
+
+  // ── エリアコピー / ペースト (Task-UX-001) ───────────────
+  //
+  // 既存の単体クリップボード(Store.clipboard / 右クリックCopy / Vペースト)
+  // とは独立した areaClipboard を使う。互いに干渉しない。
+
+  // objectType はレイヤーから導出する（仕様 v1.4: 単一値の固定禁止）。
+  // 未知の将来レイヤーは "object" にフォールバックし、コード変更なしで
+  // 互換性を保つ。paste 側の挙動は objectType に依存しない（layer +
+  // objectId のみで動作するため、新レイヤー追加時もペースト処理は無改修）。
+  const LAYER_OBJECT_TYPE = {
+    base:       "building",
+    plumbing:   "pipe",
+    gas:        "pipe",
+    electrical: "wire",
+    automation: "automation",
+  };
+  function _objectTypeForLayer(layerKey) {
+    return LAYER_OBJECT_TYPE[layerKey] || "object";
+  }
+
+  /**
+   * 矩形範囲内のオブジェクトをすべてのレイヤーから収集し、areaClipboard を生成する。
+   * Origin-Based Selection: グリッドキー（メインセルの左上座標）のみで判定する。
+   * 固定建物（製造ポッド）は対象から除外する（仕様: Printing Pod Exception）。
+   *
+   * @returns {{count:number}} 収集したオブジェクト数
+   */
+  function copySelection(minCol, minRow, maxCol, maxRow) {
+    const objects = [];
+
+    for (const lk of LAYER_ORDER) {
+      const grid = Store.getLayerGrid(lk);
+      for (const [key, b] of Object.entries(grid)) {
+        if (b.ref) continue;     // メインセルのみ判定（=建物の原点）
+        if (b.fixed) continue;   // 製造ポッドなど固定建物は対象外（必須）
+
+        const [col, row] = key.split(",").map(Number);
+        if (col >= minCol && col <= maxCol && row >= minRow && row <= maxRow) {
+          objects.push({
+            layer:      lk,
+            objectType: _objectTypeForLayer(lk),
+            objectId:   b.id,
+            relX:       col - minCol,
+            relY:       row - minRow,
+          });
+        }
+      }
+    }
+
+    if (objects.length === 0) {
+      UI.showToast(I18n.t("toast.area_empty"));
+      Renderer.draw();
+      return { count: 0 };
+    }
+
+    const width  = maxCol - minCol + 1;
+    const height = maxRow - minRow + 1;
+    Store.setState({
+      areaClipboard: { width, height, objects },
+      pasteMode: true,
+    });
+
+    const unit = I18n.getLang() === "en" ? " objects" : "個";
+    UI.showToast(I18n.t("toast.area_copied") + objects.length + unit);
+    Renderer.draw();
+    return { count: objects.length };
+  }
+
+  /**
+   * areaClipboard の内容を anchor 位置に1コマンドとしてペーストする。
+   * グリッド範囲外になるオブジェクトは個別にスキップする（全体は中断しない）。
+   * 複数レイヤーをまとめた "multi" コマンドとして1回だけ履歴に積む。
+   */
+  function pasteAreaClipboard(anchorCol, anchorRow) {
+    const { areaClipboard } = Store.getState();
+    if (!areaClipboard) return { count: 0 };
+
+    const diffs = [];
+    let placed = 0;
+
+    for (const obj of areaClipboard.objects) {
+      if (obj.objectId === "printing_pod") continue; // 仕様: Printing Pod は絶対にペーストしない（防御的二重チェック）
+
+      const def = BUILDING_MAP[obj.objectId];
+      if (!def) continue;
+
+      const left = anchorCol + obj.relX;
+      const top  = anchorRow + obj.relY;
+      if (!_footprintInBounds(left, top, def.w, def.h)) continue; // skip out-of-bounds, keep going
+
+      const grid  = Store.getLayerGrid(obj.layer);
+      const cells = _footprintCells(left, top, def);
+      for (const { key, after } of cells) {
+        const before = grid[key] ?? null;
+        diffs.push({ key, layer: obj.layer, before, after });
+        Store.setCell(obj.layer, key, after);
+      }
+      placed++;
+    }
+
+    if (placed === 0) {
+      UI.showToast(I18n.t("toast.area_empty"));
+      return { count: 0 };
+    }
+
+    const pasteLabel = I18n.getLang() === "en" ? "Paste" : "ペースト";
+    Store.pushCommand(pasteLabel, "multi", diffs);
+    UI.updateUndoButtons();
+    _afterEditFull();   // single redraw + single room recalculation for the whole batch
+
+    const unit = I18n.getLang() === "en" ? " objects" : "個";
+    UI.showToast(I18n.t("toast.area_pasted") + placed + unit);
+    return { count: placed };
+  }
+
+  /** ペーストモードのみ終了する。areaClipboard は保持（再選択すれば再ペースト可）。 */
+  function exitPasteMode() {
+    if (!Store.getState().pasteMode) return;
+    Store.setState({ pasteMode: false });
+    Renderer.draw();
   }
 
   /** Called on commit events — runs full room detection. */
@@ -247,6 +385,7 @@ const App = (() => {
     // ツールボタン
     document.getElementById("tool-place").addEventListener("click", () => UI.setTool("place"));
     document.getElementById("tool-erase").addEventListener("click", () => UI.setTool("erase"));
+    document.getElementById("tool-copy")?.addEventListener("click", () => UI.setTool("copy"));
 
     // Undo/Redo ボタン
     document.getElementById("btn-undo").addEventListener("click", performUndo);
@@ -333,6 +472,7 @@ const App = (() => {
     // スマホ: ボトムバーのツールボタン
     document.getElementById("tool-place-m")?.addEventListener("click", () => UI.setTool("place"));
     document.getElementById("tool-erase-m")?.addEventListener("click", () => UI.setTool("erase"));
+    document.getElementById("tool-copy-m")?.addEventListener("click", () => UI.setTool("copy"));
     document.getElementById("btn-undo-m")?.addEventListener("click", performUndo);
     document.getElementById("btn-redo-m")?.addEventListener("click", performRedo);
     document.getElementById("btn-zoom-reset-m")?.addEventListener("click", fitView);
@@ -401,6 +541,7 @@ const App = (() => {
 
   document.addEventListener("DOMContentLoaded", init);
 
-  return { placeBuilding, eraseBuilding, applyZoom, fitView, performUndo, performRedo, runRoomDetection };
+  return { placeBuilding, eraseBuilding, applyZoom, fitView, performUndo, performRedo, runRoomDetection,
+            copySelection, pasteAreaClipboard, exitPasteMode };
 
 })();

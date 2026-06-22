@@ -258,6 +258,63 @@ const Renderer = (() => {
     _ctx.stroke();
   }
 
+  // ── 矩形選択（Copy Tool） ────────────────────────────────
+  function _drawSelectionRect() {
+    const { tool, selection } = Store.getState();
+    if (tool !== "copy" || !selection.active) return;
+
+    const minC = Math.min(selection.startCol, selection.endCol);
+    const maxC = Math.max(selection.startCol, selection.endCol);
+    const minR = Math.min(selection.startRow, selection.endRow);
+    const maxR = Math.max(selection.startRow, selection.endRow);
+
+    const s  = _cs();
+    const sc = _toScreen(minC, minR);
+    const w  = (maxC - minC + 1) * s;
+    const h  = (maxR - minR + 1) * s;
+
+    _ctx.save();
+    _ctx.fillStyle   = "rgba(90,160,255,0.15)";
+    _ctx.strokeStyle = "rgba(90,160,255,0.9)";
+    _ctx.lineWidth   = 1.5;
+    _ctx.setLineDash([6, 3]);
+    _ctx.fillRect(sc.x, sc.y, w, h);
+    _ctx.strokeRect(sc.x, sc.y, w, h);
+    _ctx.restore();
+  }
+
+  // ── ペースト プレビュー（半透明ゴースト・状態は変更しない） ──
+  function _drawPastePreview() {
+    const { pasteMode, areaClipboard, lastMouse, selection } = Store.getState();
+    if (!pasteMode || !areaClipboard || !lastMouse) return;
+    if (selection.active) return; // dragging a fresh selection takes visual priority
+
+    const { col: anchorCol, row: anchorRow } = toGrid(lastMouse.x, lastMouse.y);
+    const s = _cs();
+
+    _ctx.save();
+    _ctx.globalAlpha = 0.5;
+    for (const obj of areaClipboard.objects) {
+      const def = BUILDING_MAP[obj.objectId];
+      if (!def) continue;
+
+      const left = anchorCol + obj.relX;
+      const top  = anchorRow + obj.relY;
+      const sc   = _toScreen(left, top);
+      const bw   = def.w * s;
+      const bh   = def.h * s;
+
+      _ctx.fillStyle = def.color + "cc";
+      _ctx.beginPath();
+      _ctx.roundRect(sc.x + 1, sc.y + 1, bw - 2, bh - 2, 3);
+      _ctx.fill();
+      _ctx.strokeStyle = def.color;
+      _ctx.lineWidth   = 1;
+      _ctx.stroke();
+    }
+    _ctx.restore();
+  }
+
   // ── メイン描画 ───────────────────────────────────────────
   function draw() {
     if (!_canvas) return;
@@ -285,6 +342,8 @@ const Renderer = (() => {
 
     _drawBorder();
     _drawHoverPreview();
+    _drawSelectionRect();
+    _drawPastePreview();
   }
 
   return { init, resize, draw, toGrid };
