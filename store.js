@@ -50,6 +50,18 @@ const Store = (() => {
     activeLayer:      "base",
     clipboard:        null,
 
+    // ── Area selection / copy / paste (Task-UX-001) ──────────
+    // Runtime-only. Never serialized (see serialize()/deserialize()).
+    areaClipboard: null,   // { width, height, objects: [{layer, objectType, objectId, relX, relY}] }
+    selection: {
+      active:   false,
+      startCol: 0,
+      startRow: 0,
+      endCol:   0,
+      endRow:   0,
+    },
+    pasteMode: false,
+
     layers: {
       base:       {},
       plumbing:   {},

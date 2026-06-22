@@ -22,6 +22,7 @@ const I18n = (() => {
       "sidebar.search":     "Search...",
       "sidebar.place":      "Place",
       "sidebar.erase":      "Erase",
+      "sidebar.copy":       "Copy",
       "sidebar.clear":      "Clear Layer",
       "sidebar.hint_pan":   "Pan",
       "sidebar.hint_fit":   "Fit view",
@@ -77,6 +78,9 @@ const I18n = (() => {
       "toast.load_error":   "Load error",
       "toast.saved":        "Saved",
       "toast.copied":       "Copied: ",
+      "toast.area_copied":  "Copied: ",
+      "toast.area_pasted":  "Pasted: ",
+      "toast.area_empty":   "No buildings in selection",
       "confirm.clear":      "Delete all buildings on the current layer?",
 
       // Room type names (from ROOM_TYPES)
@@ -95,6 +99,7 @@ const I18n = (() => {
       "sidebar.search":     "検索...",
       "sidebar.place":      "配置",
       "sidebar.erase":      "消去",
+      "sidebar.copy":       "コピー",
       "sidebar.clear":      "全消去",
       "sidebar.hint_pan":   "パン",
       "sidebar.hint_fit":   "全体表示",
@@ -149,6 +154,9 @@ const I18n = (() => {
       "toast.load_error":   "読み込みエラー",
       "toast.saved":        "保存しました",
       "toast.copied":       "コピー: ",
+      "toast.area_copied":  "コピー: ",
+      "toast.area_pasted":  "ペースト: ",
+      "toast.area_empty":   "選択範囲に建物がありません",
       "confirm.clear":      "現在のレイヤーの建物を全て削除しますか？",
 
       // Room type names
