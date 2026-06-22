@@ -200,6 +200,12 @@ const App = (() => {
     UI.updateUndoButtons();
     _afterEditFull();   // single redraw + single room recalculation for the whole batch
 
+    // 仕様 R5.2: ペースト成功後、ゴーストを自動的に +1/+1 移動する。
+    // 新たに配置した構造物と重ならないようにし、連続ペーストを続けられる
+    // ようにするための表示上の調整のみ。World state / クリップボード内容 /
+    // Undo・Redo には一切影響しない。
+    Store.setState({ ghostX: anchorCol + 1, ghostY: anchorRow + 1 });
+
     const unit = I18n.getLang() === "en" ? " objects" : "個";
     UI.showToast(I18n.t("toast.area_pasted") + placed + unit);
     return { count: placed };
