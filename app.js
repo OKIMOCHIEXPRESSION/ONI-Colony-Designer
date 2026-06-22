@@ -500,7 +500,6 @@ const App = (() => {
     document.getElementById("tool-place-m")?.addEventListener("click", () => UI.setTool("place"));
     document.getElementById("tool-erase-m")?.addEventListener("click", () => UI.setTool("erase"));
     document.getElementById("tool-copy-m")?.addEventListener("click", () => UI.setTool("copy"));
-    document.getElementById("btn-clear-clipboard-m")?.addEventListener("click", () => App.clearClipboard());
     document.getElementById("btn-undo-m")?.addEventListener("click", performUndo);
     document.getElementById("btn-redo-m")?.addEventListener("click", performRedo);
     document.getElementById("btn-zoom-reset-m")?.addEventListener("click", fitView);
