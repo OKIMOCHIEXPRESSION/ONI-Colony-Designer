@@ -214,6 +214,18 @@ const App = (() => {
     Renderer.draw();
   }
 
+  /**
+   * クリップボードとゴーストを完全に破棄する（仕様 R5.1: Clear Clipboard）。
+   * Undo/Redoの対象外（コマンド履歴に積まない）。レイヤー・部屋・ミニマップ
+   * には一切触れない。Copy Tool を再選択しても以前のクリップボードは復元
+   * されない（次回コピーが必須）。
+   */
+  function clearClipboard() {
+    Store.setState({ areaClipboard: null, ghostActive: false, ghostX: null, ghostY: null });
+    Renderer.draw();
+    UI.showToast(I18n.t("toast.clipboard_cleared"));
+  }
+
   /** Called on commit events — runs full room detection. */
   function _afterEditFull() {
     UI.updateStats();
@@ -394,6 +406,7 @@ const App = (() => {
     document.getElementById("tool-place").addEventListener("click", () => UI.setTool("place"));
     document.getElementById("tool-erase").addEventListener("click", () => UI.setTool("erase"));
     document.getElementById("tool-copy")?.addEventListener("click", () => UI.setTool("copy"));
+    document.getElementById("btn-clear-clipboard")?.addEventListener("click", () => App.clearClipboard());
 
     // Undo/Redo ボタン
     document.getElementById("btn-undo").addEventListener("click", performUndo);
@@ -481,6 +494,7 @@ const App = (() => {
     document.getElementById("tool-place-m")?.addEventListener("click", () => UI.setTool("place"));
     document.getElementById("tool-erase-m")?.addEventListener("click", () => UI.setTool("erase"));
     document.getElementById("tool-copy-m")?.addEventListener("click", () => UI.setTool("copy"));
+    document.getElementById("btn-clear-clipboard-m")?.addEventListener("click", () => App.clearClipboard());
     document.getElementById("btn-undo-m")?.addEventListener("click", performUndo);
     document.getElementById("btn-redo-m")?.addEventListener("click", performRedo);
     document.getElementById("btn-zoom-reset-m")?.addEventListener("click", fitView);
@@ -550,6 +564,6 @@ const App = (() => {
   document.addEventListener("DOMContentLoaded", init);
 
   return { placeBuilding, eraseBuilding, applyZoom, fitView, performUndo, performRedo, runRoomDetection,
-            copySelection, pasteAreaClipboard, hideGhost };
+            copySelection, pasteAreaClipboard, hideGhost, clearClipboard };
 
 })();
