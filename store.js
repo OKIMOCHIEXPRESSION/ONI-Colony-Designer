@@ -50,7 +50,7 @@ const Store = (() => {
     activeLayer:      "base",
     clipboard:        null,
 
-    // ── Area selection / copy / paste (Task-UX-001) ──────────
+    // ── Area selection / copy / paste (Task-UX-001 / R5: ghost-based paste) ──
     // Runtime-only. Never serialized (see serialize()/deserialize()).
     areaClipboard: null,   // { width, height, objects: [{layer, objectType, objectId, relX, relY}] }
     selection: {
@@ -60,7 +60,12 @@ const Store = (() => {
       endCol:   0,
       endRow:   0,
     },
-    pasteMode: false,
+    // Ghost: a draggable, 50%-opacity preview of the clipboard. Position is
+    // explicit grid coordinates (no cursor tracking) — dragged via pointer
+    // deltas, confirmed via tap. See app.js copySelection()/pasteAreaClipboard().
+    ghostX:      0,
+    ghostY:      0,
+    ghostActive: false,
 
     layers: {
       base:       {},

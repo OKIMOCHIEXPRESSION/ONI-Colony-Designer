@@ -143,7 +143,12 @@ const App = (() => {
     const height = maxRow - minRow + 1;
     Store.setState({
       areaClipboard: { width, height, objects },
-      pasteMode: true,
+      // Ghost spawn rule (R5, mandatory): offset +1/+1 from the source
+      // rectangle's top-left so the copy is never fully overlapping the
+      // original and is immediately visible as a distinct, draggable object.
+      ghostX: minCol + 1,
+      ghostY: minRow + 1,
+      ghostActive: true,
     });
 
     const unit = I18n.getLang() === "en" ? " objects" : "個";
@@ -153,7 +158,8 @@ const App = (() => {
   }
 
   /**
-   * areaClipboard の内容を anchor 位置に1コマンドとしてペーストする。
+   * ペースト用ゴーストの内容を ghostX/ghostY 位置に1コマンドとしてペーストする。
+   * 仕様 R5: 配置アンカーは常にゴースト座標（カーソル位置ではない）。
    * グリッド範囲外になるオブジェクトは個別にスキップする（全体は中断しない）。
    * 複数レイヤーをまとめた "multi" コマンドとして1回だけ履歴に積む。
    */
@@ -199,10 +205,12 @@ const App = (() => {
     return { count: placed };
   }
 
-  /** ペーストモードのみ終了する。areaClipboard は保持（再選択すれば再ペースト可）。 */
-  function exitPasteMode() {
-    if (!Store.getState().pasteMode) return;
-    Store.setState({ pasteMode: false });
+  /** ゴーストを非表示にする（位置とクリップボードは保持。再度Copy Toolを
+   *  選択すれば同じ位置に再表示される。仕様 R5: ghostX/ghostY/ghostActive
+   *  はいずれも runtime-only で save には含めない）。 */
+  function hideGhost() {
+    if (!Store.getState().ghostActive) return;
+    Store.setState({ ghostActive: false });
     Renderer.draw();
   }
 
@@ -542,6 +550,6 @@ const App = (() => {
   document.addEventListener("DOMContentLoaded", init);
 
   return { placeBuilding, eraseBuilding, applyZoom, fitView, performUndo, performRedo, runRoomDetection,
-            copySelection, pasteAreaClipboard, exitPasteMode };
+            copySelection, pasteAreaClipboard, hideGhost };
 
 })();

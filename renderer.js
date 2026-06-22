@@ -283,13 +283,13 @@ const Renderer = (() => {
     _ctx.restore();
   }
 
-  // ── ペースト プレビュー（半透明ゴースト・状態は変更しない） ──
-  function _drawPastePreview() {
-    const { pasteMode, areaClipboard, lastMouse, selection } = Store.getState();
-    if (!pasteMode || !areaClipboard || !lastMouse) return;
-    if (selection.active) return; // dragging a fresh selection takes visual priority
+  // ── ペースト用ゴースト（仕様R5: カーソル追従ではなく明示座標で描画） ──
+  // 状態は変更しない。ghostX/ghostY はドラッグ操作（input.js）でのみ更新される。
+  function _drawGhost() {
+    const { ghostActive, areaClipboard, ghostX, ghostY, selection } = Store.getState();
+    if (!ghostActive || !areaClipboard) return;
+    if (selection.active) return; // 新規選択ドラッグ中は表示しない（通常は同時に起こらない）
 
-    const { col: anchorCol, row: anchorRow } = toGrid(lastMouse.x, lastMouse.y);
     const s = _cs();
 
     _ctx.save();
@@ -298,8 +298,8 @@ const Renderer = (() => {
       const def = BUILDING_MAP[obj.objectId];
       if (!def) continue;
 
-      const left = anchorCol + obj.relX;
-      const top  = anchorRow + obj.relY;
+      const left = ghostX + obj.relX;
+      const top  = ghostY + obj.relY;
       const sc   = _toScreen(left, top);
       const bw   = def.w * s;
       const bh   = def.h * s;
@@ -343,7 +343,7 @@ const Renderer = (() => {
     _drawBorder();
     _drawHoverPreview();
     _drawSelectionRect();
-    _drawPastePreview();
+    _drawGhost();
   }
 
   return { init, resize, draw, toGrid };

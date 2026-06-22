@@ -59,9 +59,11 @@ const Input = (() => {
   // Multi-touch guard: true while 2+ fingers are active; blocks all drawing
   let _gestureActive = false;
 
-  // Paste-mode tap tracking (Task-UX-001): origin point of a potential
-  // single-tap paste commit, cleared once resolved (committed or treated as drag)
-  let _pasteTapOrigin = null;
+  // Ghost drag tracking (Task-UX-001 R5): set while the user is dragging the
+  // paste ghost. Records the drag's screen origin and the ghost/grid position
+  // at drag-start so movement can be expressed as a whole-cell delta via
+  // Renderer.toGrid (no raw pixel math, no extra pan/zoom conversion needed).
+  let _ghostDragOrigin = null; // { px, py, startCol, startRow, startGhostX, startGhostY }
 
   // キャンバス参照
   let _canvas = null;
@@ -96,7 +98,7 @@ const Input = (() => {
       _cancelLongPress();
       _abortDraw();           // roll back any in-progress stroke — never commit on multi-touch
       _cancelSelection();      // a second finger landing cancels an in-progress rectangle selection
-      _pasteTapOrigin = null;  // and cancels a pending paste-tap, without committing it
+      _ghostDragOrigin = null; // and cancels an in-progress ghost drag, without committing a paste
       _gestureActive = true;
       _startPinch();
       return;
@@ -118,17 +120,21 @@ const Input = (() => {
       return;
     }
 
-    const { tool, pasteMode } = Store.getState();
+    const { tool, ghostActive } = Store.getState();
 
-    // Copy Tool: 矩形選択の追跡を常に開始する（仕様の Selection Workflow に
-    // 従い pointerdown は常に矩形を開始する）。ペーストモードが同時に有効な
-    // 場合は、タップ判定用の起点も記録する。pointerup 時に実際の移動距離で
-    // 「タップ＝既存クリップボードをペースト」か「ドラッグ＝新規選択でコピー」
-    // かを決定する（仕様 v1.4: クリップボード再利用とのコンフリクトを解消）。
+    // Copy Tool: ゴーストが表示中ならドラッグ追跡を開始し（タップで確定
+    // ペースト、ドラッグでゴースト移動）、表示されていなければ新規矩形
+    // 選択の追跡を開始する。pointerup 時に実際の移動距離で「タップ＝
+    // ペースト確定」か「ドラッグ＝ゴースト移動 / 新規選択確定」かを決定する。
     if (tool === "copy" && !_gestureActive) {
       const { col, row } = Renderer.toGrid(px, py);
-      Store.setState({ selection: { active: true, startCol: col, startRow: row, endCol: col, endRow: row } });
-      if (pasteMode) _pasteTapOrigin = { x: px, y: py };
+
+      if (ghostActive) {
+        const { ghostX, ghostY } = Store.getState();
+        _ghostDragOrigin = { px, py, startCol: col, startRow: row, startGhostX: ghostX, startGhostY: ghostY };
+      } else {
+        Store.setState({ selection: { active: true, startCol: col, startRow: row, endCol: col, endRow: row } });
+      }
       Renderer.draw();
       return;
     }
@@ -182,6 +188,20 @@ const Input = (() => {
       return;
     }
 
+    // ─ ゴーストのドラッグ移動（Copy Tool） ─
+    // ピクセル単位の差分計算は行わず、Renderer.toGrid のセル差分のみを使う
+    // （pan/zoom 変換は toGrid 側で既に解決済みのため、ここで再計算しない）。
+    if (_ghostDragOrigin) {
+      const dCol = col - _ghostDragOrigin.startCol;
+      const dRow = row - _ghostDragOrigin.startRow;
+      Store.setState({
+        ghostX: _ghostDragOrigin.startGhostX + dCol,
+        ghostY: _ghostDragOrigin.startGhostY + dRow,
+      });
+      Renderer.draw();
+      return;
+    }
+
     // ─ 矩形選択ドラッグ更新（Copy Tool） ─
     const { selection } = Store.getState();
     if (selection.active) {
@@ -227,33 +247,30 @@ const Input = (() => {
       _gestureActive = false;
     }
 
-    // ─ Copy Tool の確定: タップ(既存クリップボードをペースト) か
-    //   ドラッグ(新規矩形を確定してコピー) かを移動距離で判定する ─
-    const { selection, pasteMode } = Store.getState();
+    // ─ ゴーストドラッグの確定: タップ(ペースト確定) か
+    //   ドラッグ(ゴースト移動の確定のみ・ペーストはしない) かを移動距離で判定する ─
+    if (_ghostDragOrigin && _pointers.size === 0) {
+      const dx    = px - _ghostDragOrigin.px;
+      const dy    = py - _ghostDragOrigin.py;
+      const isTap = Math.hypot(dx, dy) <= LONG_PRESS_PX;
+      _ghostDragOrigin = null;
+      if (isTap) {
+        const { ghostX, ghostY } = Store.getState();
+        App.pasteAreaClipboard(ghostX, ghostY);
+      }
+      Renderer.draw();
+      return;
+    }
+
+    // ─ 矩形選択の確定（Copy Tool・ゴースト非表示時のみ到達） ─
+    const { selection } = Store.getState();
     if (selection.active && _pointers.size === 0) {
-      let committedPaste = false;
-
-      if (pasteMode && _pasteTapOrigin) {
-        const dx    = px - _pasteTapOrigin.x;
-        const dy    = py - _pasteTapOrigin.y;
-        const isTap = Math.hypot(dx, dy) <= LONG_PRESS_PX;
-        if (isTap) {
-          Store.setState({ selection: { ...selection, active: false } });
-          const { col, row } = Renderer.toGrid(px, py);
-          App.pasteAreaClipboard(col, row);
-          committedPaste = true;
-        }
-      }
-      _pasteTapOrigin = null;
-
-      if (!committedPaste) {
-        const minCol = Math.min(selection.startCol, selection.endCol);
-        const maxCol = Math.max(selection.startCol, selection.endCol);
-        const minRow = Math.min(selection.startRow, selection.endRow);
-        const maxRow = Math.max(selection.startRow, selection.endRow);
-        Store.setState({ selection: { ...selection, active: false } });
-        App.copySelection(minCol, minRow, maxCol, maxRow);
-      }
+      const minCol = Math.min(selection.startCol, selection.endCol);
+      const maxCol = Math.max(selection.startCol, selection.endCol);
+      const minRow = Math.min(selection.startRow, selection.endRow);
+      const maxRow = Math.max(selection.startRow, selection.endRow);
+      Store.setState({ selection: { ...selection, active: false } });
+      App.copySelection(minCol, minRow, maxCol, maxRow);
       return;
     }
 
@@ -277,7 +294,7 @@ const Input = (() => {
     _pointers.delete(e.pointerId);
     if (_isDrawing) _abortDraw();   // system-cancelled touch: roll back, never commit
     _cancelSelection();
-    _pasteTapOrigin = null;
+    _ghostDragOrigin = null;
     _isPanning     = false;
     _gestureActive = false;
     _updateCursor();
@@ -491,8 +508,8 @@ const Input = (() => {
       if (lbl) lbl.textContent = "建物を選択してください";
       document.querySelectorAll(".building-btn").forEach(x => x.classList.remove("selected"));
       _cancelSelection();
-      _pasteTapOrigin = null;
-      App.exitPasteMode();
+      _ghostDragOrigin = null;
+      App.hideGhost();
       return;
     }
 

@@ -122,13 +122,14 @@ const UI = (() => {
     if (selection.active) Store.setState({ selection: { ...selection, active: false } });
 
     if (t === "copy") {
-      // Re-entering Copy Tool reactivates paste mode if a clipboard already
-      // exists (spec v1.4 "Re-entering Paste Mode"), so the user can paste
-      // again without redrawing a selection. No clipboard yet → leave paste
-      // mode off; the next drag on the canvas will start a fresh selection.
-      Store.setState({ pasteMode: Boolean(areaClipboard) });
+      // Re-entering Copy Tool reactivates the ghost if a clipboard already
+      // exists, reappearing at wherever it was left (ghostX/ghostY are not
+      // reset here — only a fresh copy respawns the ghost at the mandatory
+      // +1/+1 offset). No clipboard yet → ghost stays hidden; the next drag
+      // on the canvas starts a fresh selection instead.
+      Store.setState({ ghostActive: Boolean(areaClipboard) });
     } else {
-      Store.setState({ pasteMode: false });
+      Store.setState({ ghostActive: false });
     }
 
     if (typeof Input !== "undefined") Input.refreshCursor();
